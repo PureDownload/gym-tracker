@@ -1,0 +1,44 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node modules & dependencies
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor & OS files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Android local configs & build artifacts
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/captures
+android/.idea
+android/*.iml
+android/.externalNativeBuild
+android/.cxx
+android/app/src/main/assets/public
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+
+# Temporary / Scratch
+*.tmp
+*.bak
+scratch/

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">IronTrack 铁脉健身</string>
+    <string name="title_activity_main">IronTrack 铁脉健身</string>
+    <string name="package_name">com.irontrack.fitness</string>
+    <string name="custom_url_scheme">com.irontrack.fitness</string>
+</resources>

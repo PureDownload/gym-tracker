@@ -1,0 +1,51 @@
+:root {
+  /* Color Palette - Dark Cyber Iron */
+  --bg-main: #090d16;
+  --bg-surface: #111726;
+  --bg-card: rgba(22, 30, 49, 0.85);
+  --bg-card-hover: rgba(30, 41, 66, 0.95);
+  --bg-input: #172033;
+  --bg-elevated: #1e293b;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-focus: #38bdf8;
+  
+  /* Brand Accents */
+  --accent-primary: #10b981;    /* Energetic Emerald */
+  --accent-primary-glow: rgba(16, 185, 129, 0.35);
+  --accent-cyan: #06b6d4;       /* High-tech Cyan */
+  --accent-cyan-glow: rgba(6, 182, 212, 0.35);
+  --accent-warning: #f59e0b;    /* Amber Caution */
+  --accent-danger: #ef4444;     /* Flame Red Drop */
+  --accent-purple: #a855f7;
+  
+  /* Text */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #090d16;
+
+  /* Muscle Colors */
+  --muscle-chest: #38bdf8;
+  --muscle-back: #4ade80;
+  --muscle-legs: #f59e0b;
+  --muscle-shoulders: #a855f7;
+  --muscle-arms: #ec4899;
+  --muscle-core: #06b6d4;
+  --muscle-cardio: #f97316;
+
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Elevation & Blur */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.25);
+  --glass-blur: blur(16px);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}

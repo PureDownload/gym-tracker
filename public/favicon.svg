@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#090d16"/>
+  <defs>
+    <linearGradient id="neonG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#10b981"/>
+      <stop offset="100%" stopColor="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <path d="M30 35 L30 65 M70 35 L70 65 M20 42 L20 58 M80 42 L80 58 M20 50 L80 50" stroke="url(#neonG)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
