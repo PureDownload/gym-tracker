@@ -62,10 +62,6 @@ class StorageService {
             const localData = this.getFromLocalStorage<WorkoutSession[]>(LS_WORKOUTS_KEY);
             if (localData && localData.length > 0) {
               list = localData;
-            } else {
-              // Populate seed workouts for immediate delight
-              list = this.getSeedWorkouts();
-              this.saveWorkoutsBulk(list);
             }
           }
           this.saveToLocalStorage(LS_WORKOUTS_KEY, list);
@@ -75,11 +71,7 @@ class StorageService {
       });
     } catch (e) {
       console.warn('Fallback to LocalStorage for getWorkouts', e);
-      let localData = this.getFromLocalStorage<WorkoutSession[]>(LS_WORKOUTS_KEY);
-      if (!localData || localData.length === 0) {
-        localData = this.getSeedWorkouts();
-        this.saveToLocalStorage(LS_WORKOUTS_KEY, localData);
-      }
+      const localData = this.getFromLocalStorage<WorkoutSession[]>(LS_WORKOUTS_KEY) || [];
       return localData.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     }
   }

@@ -81,7 +81,6 @@ npx cap run android
 
 1. **在电脑终端启动开发服务器（允许局域网访问）**：
    ```bash
-   cd /Users/chunxiao/Documents/web/me/LangChainProject/gym-tracker
    npm run dev
    ```
    终端会输出类似于：
@@ -100,6 +99,69 @@ npx cap run android
    - 点击 **“添加到主屏幕” (Add to Home screen)** 或 **“安装应用”**。
    - 手机桌面会立即生成 **IronTrack** 健身图标！
    - 从桌面点击打开后：**无浏览器地址栏、全屏运行、深色状态栏一体化**，体验与原生 App 完全一致，离线也能正常打开。
+
+---
+
+## 方案三：通过 GitHub 自动发布（公网网页 + 云端一键打 APK）
+
+项目已配置完整的 GitHub Actions 持续集成工作流，只需将代码推送到 GitHub，即可实现**零本地环境安装**的自动化双端发布：
+
+### 1. 发布公网网页版 (GitHub Pages)
+
+无需购买服务器或域名，GitHub 免费为您提供全球 CDN 加速的静态站点托管服务。
+
+- **自动工作流文件**：[.github/workflows/deploy-pages.yml](file:///.github/workflows/deploy-pages.yml)
+- **公网访问地址**：
+  ```
+  https://<你的GitHub用户名>.github.io/gym-tracker/
+  ```
+  *(例如：`https://puredownload.github.io/gym-tracker/`)*
+
+#### 首次开启步骤（仅需配置一次）：
+1. 在浏览器打开你的 GitHub 仓库主页。
+2. 点击顶部导航栏的 **Settings** -> 左侧菜单选择 **Pages**。
+3. 在 **Build and deployment** 下方的 **Source** 下拉菜单中：
+   - 将默认的 `Deploy from a branch` 修改为 **`GitHub Actions`**。
+4. 后续只要执行 `git push` 推送代码到 `main` / `master` 分支，GitHub 会自动编译前端并发布上线。
+5. 手机/电脑直接打开该网址，手机浏览器同样支持点击“**添加到主屏幕**”秒变独立 WebApp！
+
+---
+
+### 2. 云端自动化构建 Android APK (GitHub Actions)
+
+无需在本地电脑配置任何庞大的 Android Studio、Android SDK 或 Java 环境，GitHub 云端虚拟机为您自动完成全套编译打包。
+
+- **自动工作流文件**：[.github/workflows/build-apk.yml](file:///.github/workflows/build-apk.yml)
+- **下载生成的 APK**：
+  1. 打开 GitHub 仓库，点击顶部菜单的 **Actions**。
+  2. 点击最近一次运行成功的任务（名称为 **`编译 Android APK 安装包`**）。
+  3. 滚动到页面底部的 **Artifacts** 区域。
+  4. 点击 **`IronTrack-Debug-APK`** 即可直接下载编译生成的 `app-debug.apk`。
+  5. 将 APK 发送至安卓手机（如通过微信/QQ传输或网盘），点击即可直接安装。
+
+---
+
+## ⚠️ 关键注意事项与避坑指南
+
+### 1. 版本环境兼容矩阵（重中之重）
+新版本 Capacitor / Vite 对运行时版本有严格要求，修改 CI 脚本或本地编译时必须严格遵循以下版本匹配：
+- **Node.js**：必须 **`>= 22.0.0`**（Capacitor 7/8 CLI 的硬性要求，否则报错 `The Capacitor CLI requires NodeJS >=22.0.0`）。
+- **Java JDK**：必须 **`JDK 21`**（Capacitor 7/8 Android 原生库目标代码版本为 Java 21，若使用 JDK 17 会报 `error: invalid source release: 21` 错误）。
+- **Gradle**：推荐 `Gradle 8.14+`，并使用 `--no-daemon` 参数避免在 CI 容器环境中偶发 OOM 崩溃。
+
+### 2. GitHub Pages 路径适配 (`vite.config.ts`)
+- GitHub Pages 项目通常托管在子路径（如 `/gym-tracker/`）。
+- 在 `vite.config.ts` 中必须设置 `base: './'`（相对路径），确保无论在根目录、子目录还是本地 Capacitor 原生 WebView 中，CSS、JS 与图片资源均能以相对路径正确加载，避免页面白屏。
+
+### 3. 数据持久化与多端同步机制
+- **数据保存在哪里？**：本项目采用客户端本地存储（IndexedDB / LocalStorage），所有数据（训练日志、自定义动作、体重）均严格保存在手机本地或当前浏览器中，**不经过任何第三方服务器，注重极致隐私**。
+- **换设备/版本升级如何转移数据？**：
+  - 点击应用右上角的 **“数据库” (备份恢复)** 图标。
+  - 点击 **“导出备份数据”**，会生成一个包含全部记录的 `.json` 备份文件。
+  - 在新手机、新浏览器或重新安装的 App 中点击 **“导入恢复数据”** 即可 100% 完整迁移。
+- **公网网页版与 APK 数据互通提示**：
+  - 由于浏览器安全沙盒限制，网页版（Chrome）与本地安装的 APK 是彼此独立的存储容器。
+  - 若需在网页版与 APK 之间同步，通过上述“导出 JSON -> 导入”即可无缝转移。
 
 ---
 

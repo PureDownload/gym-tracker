@@ -297,11 +297,13 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     const updated = [...activeExercises];
     const targetSet = updated[exerciseIndex].sets[setIndex];
     if (weightDelta !== 0) {
-      const newWeight = Math.max(0, Math.round((targetSet.weightKg + weightDelta) * 10) / 10);
+      const currentWeight = Number(targetSet.weightKg) || 0;
+      const newWeight = Math.max(0, Math.round((currentWeight + weightDelta) * 10) / 10);
       targetSet.weightKg = newWeight;
     }
     if (repsDelta !== 0) {
-      targetSet.reps = Math.max(1, targetSet.reps + repsDelta);
+      const currentReps = Number(targetSet.reps) || 0;
+      targetSet.reps = Math.max(1, currentReps + repsDelta);
     }
     setActiveExercises(updated);
   };
@@ -343,6 +345,11 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         ...ex,
         sets: ex.sets.map((s) => ({
           ...s,
+          weightKg: Number(s.weightKg) || 0,
+          reps: Number(s.reps) || 0,
+          durationMinutes: s.durationMinutes ? Number(s.durationMinutes) : undefined,
+          distanceKm: s.distanceKm ? Number(s.distanceKm) : undefined,
+          caloriesKcal: s.caloriesKcal ? Number(s.caloriesKcal) : undefined,
           isCompleted: true,
         })),
       })),
@@ -566,16 +573,17 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             min="1"
                             step="1"
                             className="set-input"
-                            value={set.durationMinutes || ''}
+                            value={set.durationMinutes ? set.durationMinutes : ''}
                             placeholder="30"
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const val = e.target.value;
                               handleUpdateSet(
                                 exIdx,
                                 setIdx,
                                 'durationMinutes',
-                                parseInt(e.target.value) || 0
-                              )
-                            }
+                                val === '' ? 0 : parseInt(val, 10) || 0
+                              );
+                            }}
                           />
                           <span className="set-input-unit">分</span>
                         </div>
@@ -587,16 +595,17 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             min="0"
                             step="0.1"
                             className="set-input"
-                            value={set.distanceKm || ''}
+                            value={set.distanceKm ? set.distanceKm : ''}
                             placeholder="5.0"
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const val = e.target.value;
                               handleUpdateSet(
                                 exIdx,
                                 setIdx,
                                 'distanceKm',
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
+                                val === '' ? 0 : parseFloat(val) || 0
+                              );
+                            }}
                           />
                           <span className="set-input-unit">km</span>
                         </div>
@@ -608,16 +617,17 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             min="0"
                             step="10"
                             className="set-input"
-                            value={set.caloriesKcal || ''}
+                            value={set.caloriesKcal ? set.caloriesKcal : ''}
                             placeholder="kcal"
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              const val = e.target.value;
                               handleUpdateSet(
                                 exIdx,
                                 setIdx,
                                 'caloriesKcal',
-                                parseInt(e.target.value) || 0
-                              )
-                            }
+                                val === '' ? 0 : parseInt(val, 10) || 0
+                              );
+                            }}
                           />
                           <span className="set-input-unit">cal</span>
                         </div>
@@ -710,15 +720,17 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                             step="0.5"
                             min="0"
                             className="set-input"
-                            value={set.weightKg}
-                            onChange={(e) =>
+                            value={set.weightKg === 0 ? '' : set.weightKg}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const val = e.target.value;
                               handleUpdateSet(
                                 exIdx,
                                 setIdx,
                                 'weightKg',
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
+                                val === '' ? 0 : parseFloat(val) || 0
+                              );
+                            }}
                           />
                           <span className="set-input-unit">kg</span>
                         </div>
@@ -727,17 +739,19 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                           <input
                             type="number"
                             step="1"
-                            min="1"
+                            min="0"
                             className="set-input"
-                            value={set.reps}
-                            onChange={(e) =>
+                            value={set.reps === 0 ? '' : set.reps}
+                            placeholder="0"
+                            onChange={(e) => {
+                              const val = e.target.value;
                               handleUpdateSet(
                                 exIdx,
                                 setIdx,
                                 'reps',
-                                parseInt(e.target.value) || 0
-                              )
-                            }
+                                val === '' ? 0 : parseInt(val, 10) || 0
+                              );
+                            }}
                           />
                           <span className="set-input-unit">次</span>
                         </div>
