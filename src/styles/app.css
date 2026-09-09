@@ -38,9 +38,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
+  padding: calc(12px + var(--safe-area-top)) 18px 12px 18px;
   background: rgba(17, 23, 38, 0.88);
   backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -109,7 +110,7 @@
 .main-content {
   flex: 1;
   padding: 16px;
-  padding-bottom: 90px; /* Space for bottom navigation */
+  padding-bottom: calc(90px + var(--safe-area-bottom)); /* Space for bottom navigation + safe area */
   overflow-y: auto;
 }
 
@@ -124,8 +125,9 @@
   grid-template-columns: repeat(4, 1fr);
   background: rgba(17, 23, 38, 0.92);
   backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--border-subtle);
-  padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 6px calc(8px + var(--safe-area-bottom));
 }
 
 .nav-tab {
@@ -418,27 +420,32 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
 }
 
 @media (min-width: 600px) {
   .modal-overlay {
     align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }
 
 .modal-content {
   width: 100%;
   max-width: 500px;
-  max-height: 85vh;
+  max-height: calc(85vh - var(--safe-area-top));
   background: var(--bg-surface);
   border: 1px solid var(--border-medium);
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
-  padding: 20px;
+  padding: 20px 20px calc(20px + var(--safe-area-bottom)) 20px;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-md);
@@ -570,10 +577,12 @@
 /* Floating Rest Timer */
 .rest-timer-bar {
   position: sticky;
-  bottom: 66px;
+  bottom: calc(66px + var(--safe-area-bottom));
   margin: 0 4px 10px 4px;
   padding: 10px 14px;
   background: rgba(16, 24, 39, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--accent-primary);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);

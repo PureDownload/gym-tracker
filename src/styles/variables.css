@@ -1,4 +1,10 @@
 :root {
+  /* Safe Area Insets for Mobile App / PWA Status Bar & Bottom Notch */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+
   /* Color Palette - Dark Cyber Iron */
   --bg-main: #090d16;
   --bg-surface: #111726;
