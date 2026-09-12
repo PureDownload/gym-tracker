@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Trash2, Award, Pin } from 'lucide-react';
 import type { Exercise, MuscleGroup, EquipmentType, WorkoutSession } from '../types/workout';
-import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS } from '../data/presetExercises';
+import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS } from '../data/presetExercises';
 import { analyticsService } from '../services/analytics';
 
 interface ExerciseLibraryProps {
@@ -24,6 +24,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
   const allExercises = [...PRESET_EXERCISES, ...customExercises];
 
   const [selectedCategory, setSelectedCategory] = useState<MuscleGroup | 'all'>('all');
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentType | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
 
@@ -36,11 +37,21 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
   const filteredExercises = allExercises
     .filter((ex) => {
       const matchesCat = selectedCategory === 'all' || ex.category === selectedCategory;
+      const matchesEq = selectedEquipment === 'all' || ex.equipment === selectedEquipment;
+
+      const query = searchQuery.trim().toLowerCase();
+      const eqLabel = EQUIPMENT_LABELS[ex.equipment]?.label || '';
+      const catLabel = MUSCLE_GROUP_LABELS[ex.category]?.label || '';
+
       const matchesSearch =
-        searchQuery.trim() === '' ||
-        ex.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (ex.nameEn && ex.nameEn.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesCat && matchesSearch;
+        query === '' ||
+        ex.name.toLowerCase().includes(query) ||
+        (ex.nameEn && ex.nameEn.toLowerCase().includes(query)) ||
+        (ex.description && ex.description.toLowerCase().includes(query)) ||
+        eqLabel.toLowerCase().includes(query) ||
+        catLabel.toLowerCase().includes(query);
+
+      return matchesCat && matchesEq && matchesSearch;
     })
     .sort((a, b) => {
       const aPinned = pinnedExerciseIds.includes(a.id);
@@ -93,7 +104,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
           />
           <input
             type="text"
-            placeholder="搜索动作名称..."
+            placeholder="搜索动作名称、英文名、部位、肌群(如上胸/二头/后束/深蹲)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ width: '100%', padding: '10px 10px 10px 36px' }}
@@ -135,10 +146,58 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
         })}
       </div>
 
+      {/* Equipment Filter Pills */}
+      <div className="category-scroll-container" style={{ marginTop: '8px', marginBottom: '12px' }}>
+        <button
+          className={`pill-btn ${selectedEquipment === 'all' ? 'active' : ''}`}
+          onClick={() => setSelectedEquipment('all')}
+          style={{ fontSize: '0.76rem', padding: '5px 11px' }}
+        >
+          全部器械
+        </button>
+        {(Object.keys(EQUIPMENT_LABELS) as EquipmentType[]).map((eq) => {
+          const info = EQUIPMENT_LABELS[eq];
+          const count = allExercises.filter(
+            (e) => (selectedCategory === 'all' || e.category === selectedCategory) && e.equipment === eq
+          ).length;
+          if (count === 0 && selectedCategory !== 'all') return null;
+          return (
+            <button
+              key={eq}
+              className={`pill-btn ${selectedEquipment === eq ? 'active' : ''}`}
+              onClick={() => setSelectedEquipment(eq)}
+              style={{ fontSize: '0.76rem', padding: '5px 11px' }}
+            >
+              <span>{info.icon}</span>
+              <span>{info.label}</span>
+              <span style={{ fontSize: '0.65rem', opacity: 0.7 }}>({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Exercise Count & Summary */}
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', padding: '0 4px', display: 'flex', justifyContent: 'space-between' }}>
+        <span>共找到 {filteredExercises.length} 个动作</span>
+        {(selectedCategory !== 'all' || selectedEquipment !== 'all' || searchQuery) && (
+          <span
+            style={{ color: 'var(--accent-primary)', cursor: 'pointer' }}
+            onClick={() => {
+              setSelectedCategory('all');
+              setSelectedEquipment('all');
+              setSearchQuery('');
+            }}
+          >
+            重置筛选
+          </span>
+        )}
+      </div>
+
       {/* Exercise Cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {filteredExercises.map((ex) => {
           const catInfo = MUSCLE_GROUP_LABELS[ex.category] || { label: '其他', icon: '⚡' };
+          const eqInfo = EQUIPMENT_LABELS[ex.equipment] || { label: ex.equipment, icon: '⚙️' };
           const best = getBestRecord(ex.id);
           const isPinned = pinnedExerciseIds.includes(ex.id);
 
@@ -189,14 +248,31 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
                           自定义
                         </span>
                       )}
+                      {ex.isCardio && (
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                            color: 'var(--muscle-cardio)',
+                            border: '1px solid rgba(249, 115, 22, 0.3)',
+                          }}
+                        >
+                          有氧/体能
+                        </span>
+                      )}
                     </div>
 
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {catInfo.label} · 器械: {ex.equipment}
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span>{catInfo.label}</span>
+                      <span>·</span>
+                      <span>{eqInfo.icon} {eqInfo.label}</span>
+                      {ex.nameEn && <span style={{ opacity: 0.7 }}>· {ex.nameEn}</span>}
                     </div>
 
                     {ex.description && (
-                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
                         {ex.description}
                       </p>
                     )}
