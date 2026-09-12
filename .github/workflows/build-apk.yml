@@ -1,8 +1,10 @@
-name: 自动构建 Android APK
+name: 自动构建与发布 Android APK
 
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -10,7 +12,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: 编译 Android APK 安装包
+    name: 编译 Android APK 并发布
     runs-on: ubuntu-latest
 
     steps:
@@ -50,9 +52,35 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: 保存生成的 APK
+      - name: 提取版本号并规范重命名 APK
+        id: apk_info
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ ! "$VERSION" =~ ^v ]]; then
+            VERSION="v1.0.0-build-${{ github.run_number }}"
+          fi
+          APK_NAME="IronTrack-${VERSION}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "${APK_NAME}"
+          echo "apk_path=${APK_NAME}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: 保存构建产物为 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: IronTrack-Debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: IronTrack-APK
+          path: ${{ steps.apk_info.outputs.apk_path }}
           retention-days: 30
+
+      - name: 自动创建并发布 GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk_info.outputs.apk_path }}
+          name: "IronTrack 铁脉健身 ${{ steps.apk_info.outputs.version }}"
+          tag_name: ${{ steps.apk_info.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

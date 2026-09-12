@@ -1,11 +1,13 @@
 import React from 'react';
-import { Database, Monitor, Smartphone, Flame, FileCode2 } from 'lucide-react';
+import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   isWideMode: boolean;
   onToggleWideMode: () => void;
   onOpenBackupModal: () => void;
   onOpenTechDocsModal: () => void;
+  onOpenUpdateModal: () => void;
+  hasUpdate?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -13,6 +15,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleWideMode,
   onOpenBackupModal,
   onOpenTechDocsModal,
+  onOpenUpdateModal,
+  hasUpdate = false,
 }) => {
   return (
     <header className="app-header">
@@ -27,6 +31,30 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-actions">
+        {/* Version Check & Update button */}
+        <button
+          className="icon-btn"
+          onClick={onOpenUpdateModal}
+          title={hasUpdate ? '发现新版本，点击查看更新' : '检查应用版本与更新'}
+          style={{ position: 'relative', color: hasUpdate ? 'var(--accent-primary)' : 'inherit' }}
+        >
+          <Sparkles size={18} />
+          {hasUpdate && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '5px',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent-primary)',
+                boxShadow: '0 0 8px var(--accent-primary)',
+              }}
+            />
+          )}
+        </button>
+
         {/* Technical Architecture Document in-app reader */}
         <button
           className="icon-btn"

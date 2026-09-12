@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { WorkoutSession, Exercise } from './types/workout';
+import type { UpdateCheckResult } from './types/update';
 import { storageService } from './services/storage';
+import { updateService } from './services/updateService';
 import { Header } from './components/Header';
 import { Navbar, type TabType } from './components/Navbar';
 import { WorkoutLogger } from './components/WorkoutLogger';
@@ -11,6 +13,7 @@ import { ExerciseLibrary } from './components/ExerciseLibrary';
 import { RestTimer } from './components/RestTimer';
 import { DataBackupModal } from './components/DataBackupModal';
 import { TechDocsModal } from './components/TechDocsModal';
+import { UpdateModal } from './components/UpdateModal';
 import './styles/base.css';
 import './styles/app.css';
 
@@ -24,6 +27,9 @@ export function App() {
   const [isWideMode, setIsWideMode] = useState<boolean>(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [isTechDocsModalOpen, setIsTechDocsModalOpen] = useState<boolean>(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [updateData, setUpdateData] = useState<UpdateCheckResult | null>(null);
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
   const [isRestTimerActive, setIsRestTimerActive] = useState<boolean>(false);
   const [timerKey, setTimerKey] = useState<number>(Date.now());
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -44,8 +50,25 @@ export function App() {
     }
   };
 
+  const handleCheckUpdate = async (force = false) => {
+    setIsCheckingUpdate(true);
+    try {
+      const res = await updateService.checkForUpdates(force);
+      setUpdateData(res);
+    } catch (e) {
+      console.error('Failed to check for updates', e);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    // 启动时后台静默预检更新（非阻塞）
+    updateService
+      .checkForUpdates(false)
+      .then((res) => setUpdateData(res))
+      .catch(() => {});
   }, []);
 
   const handleSaveWorkout = async (session: WorkoutSession) => {
@@ -92,6 +115,15 @@ export function App() {
           onToggleWideMode={() => setIsWideMode(!isWideMode)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}
           onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
+          onOpenUpdateModal={() => {
+            setIsUpdateModalOpen(true);
+            if (!updateData || updateData.error) {
+              handleCheckUpdate(true);
+            }
+          }}
+          hasUpdate={Boolean(
+            updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
+          )}
         />
 
         {/* Main Body Content */}
@@ -174,6 +206,15 @@ export function App() {
         <TechDocsModal
           isOpen={isTechDocsModalOpen}
           onClose={() => setIsTechDocsModalOpen(false)}
+        />
+
+        {/* Application Update Modal */}
+        <UpdateModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => setIsUpdateModalOpen(false)}
+          updateData={updateData}
+          isChecking={isCheckingUpdate}
+          onRefreshCheck={() => handleCheckUpdate(true)}
         />
       </div>
     </div>

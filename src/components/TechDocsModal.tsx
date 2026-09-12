@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { X, Layers, Cpu, Activity, Database, Smartphone } from 'lucide-react';
+import { X, Layers, Cpu, Activity, Database, Smartphone, Sparkles } from 'lucide-react';
 
 interface TechDocsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SectionKey = 'overview' | 'stack' | 'algorithms' | 'storage' | 'android';
+type SectionKey = 'overview' | 'stack' | 'algorithms' | 'storage' | 'android' | 'update';
 
 export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<SectionKey>('overview');
@@ -41,7 +41,7 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
             <div>
               <h3 className="modal-title" style={{ fontSize: '1.08rem' }}>IronTrack 技术方案与架构设计</h3>
               <div style={{ fontSize: '0.72rem', color: 'var(--accent-primary)' }}>
-                纯前端 · 本地优先 · 科学超负荷 · 原生安卓支持
+                纯前端 · 本地优先 · 科学超负荷 · 原生安卓支持 · 自动更新
               </div>
             </div>
           </div>
@@ -90,6 +90,13 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
           >
             <Smartphone size={13} />
             安卓打包与离线
+          </button>
+          <button
+            className={`pill-btn ${activeSection === 'update' ? 'active' : ''}`}
+            onClick={() => setActiveSection('update')}
+          >
+            <Sparkles size={13} />
+            应用内更新方案
           </button>
         </div>
 
@@ -271,6 +278,51 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
                 <div style={{ fontSize: '0.78rem' }}>
                   内置 <code>sw.js</code> 与 <code>manifest.json</code>，采用 Cache-First 离线优先策略。
                   部署公网后，手机浏览器加载过一次即自动固化在手机缓存中，断网飞行模式下点击主屏幕图标依然可以离线打开。
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SECTION 6: APP UPDATE ARCHITECTURE */}
+          {activeSection === 'update' && (
+            <div className="animate-fade-in">
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 800, marginBottom: '8px' }}>
+                6. 自动化构建与应用内无感更新方案
+              </h4>
+
+              <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent-primary)', marginBottom: '4px' }}>
+                  🚀 GitHub Actions 自动编译与 Release 挂载
+                </div>
+                <div style={{ fontSize: '0.78rem' }}>
+                  开发者只需在 Git 仓库打上版本标签（如 <code>v1.0.1</code>）推送到远程，GitHub Actions 自动启动 Ubuntu Runner 执行 Node 22 与 Gradle 纯命令行构建，编译生成标准命名的 <code>IronTrack-vX.X.X.apk</code>，并通过 <code>softprops/action-gh-release</code> 自动创建 Release 挂载安装包资产。
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent-cyan)', marginBottom: '4px' }}>
+                  🔍 客户端 SemVer 语义化比对与非侵入检测
+                </div>
+                <div style={{ fontSize: '0.78rem' }}>
+                  App 启动时在后台静默发起 GitHub API 检索（内置 15 分钟频次缓存防限流），通过标准的 <code>Major.Minor.Patch</code> 算法进行整数层级比较。若发现新版本，Header 更新按钮点亮红点徽标，不强行打断用户训练输入。
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ fontWeight: 800, color: '#eab308', marginBottom: '4px' }}>
+                  ⚡ 国内高速镜像加速通道 (ghproxy)
+                </div>
+                <div style={{ fontSize: '0.78rem' }}>
+                  针对国内普通移动网络偶发访问 GitHub 资产缓慢或超时的问题，内置智能加速镜像（如 <code>ghproxy.net</code>）多线路切换，确保用户一键直达高速下载，免去翻墙或代理障碍。
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px' }}>
+                <div style={{ fontWeight: 800, color: '#f43f5e', marginBottom: '4px' }}>
+                  🔐 Android Keystore 永久签名与数据平滑保留
+                </div>
+                <div style={{ fontSize: '0.78rem' }}>
+                  安卓覆盖安装要求新旧 APK 必须拥有完全一致的证书指纹。通过将专用 Keystore 的 Base64 编码保存在 GitHub Repository Secrets，CI 自动解码签名，保证覆盖升级不丢失本地 IndexedDB 健身历史记录。
                 </div>
               </div>
             </div>

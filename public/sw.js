@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           // If offline and trying to navigate, return index.html
           if (event.request.mode === 'navigate') {
-            return caches.match('./index.html') as Promise<Response>;
+            return caches.match('./index.html');
           }
           return new Response('Offline', { status: 503, statusText: 'Offline' });
         });
