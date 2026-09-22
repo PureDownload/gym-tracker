@@ -20,6 +20,8 @@ export const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('synchronous = NORMAL');
 db.pragma('foreign_keys = ON');
+db.pragma('cache_size = -64000'); // 64MB RAM page cache
+db.pragma('temp_store = MEMORY'); // In-memory temp tables and indexes
 
 export function initDatabase() {
   db.exec(`

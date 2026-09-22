@@ -940,3 +940,809 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+/* =========================================================
+   NEW MODERN WORKOUT LOGGER & BEGINNER-FRIENDLY STYLES
+   ========================================================= */
+
+/* 1. Workout HUD Dashboard */
+.workout-hud-card {
+  background: linear-gradient(135deg, rgba(16, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35), 0 0 12px rgba(16, 185, 129, 0.08);
+}
+
+.hud-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.hud-stat-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.hud-stat-box.primary {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.hud-stat-box.cyan {
+  border-color: rgba(6, 182, 212, 0.25);
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.hud-stat-value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.hud-stat-value.green {
+  color: var(--accent-primary);
+}
+
+.hud-stat-value.cyan {
+  color: var(--accent-cyan);
+}
+
+.hud-stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.hud-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.hud-timer-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.hud-timer-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.08);
+}
+
+.hud-timer-btn.danger:hover {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+.hud-timer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: inline-block;
+  box-shadow: 0 0 6px var(--accent-primary);
+}
+
+.hud-timer-dot.running {
+  animation: pulse 1.5s infinite;
+}
+
+.hud-timer-dot.paused {
+  background: var(--text-muted);
+  box-shadow: none;
+}
+
+.hud-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hud-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hud-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-cyan) 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.hud-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* 2. Compact Sets Table */
+.compact-table-container {
+  width: 100%;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.compact-table-head {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.compact-set-row-wrapper {
+  margin-bottom: 6px;
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.compact-set-row-wrapper.active {
+  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.03);
+}
+
+.compact-set-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  gap: 8px;
+  min-height: 48px;
+  transition: all var(--transition-fast);
+}
+
+.compact-set-row.completed {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.06);
+}
+
+.compact-set-row:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Table Columns */
+.col-set-num {
+  width: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.set-index-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  transition: all var(--transition-fast);
+}
+
+.set-index-badge.warmup {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: var(--accent-warning);
+}
+
+.set-index-badge.drop {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+}
+
+.set-index-badge.failure {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: var(--accent-danger);
+}
+
+.set-type-hint {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1;
+}
+
+.col-prev {
+  flex: 1.1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+
+.col-weight,
+.col-reps {
+  flex: 1.2;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.compact-input-field {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 4px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  text-align: center;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.compact-input-field:focus {
+  border-color: var(--accent-primary);
+  background: rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+}
+
+.compact-input-field.cyan:focus {
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.12);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.25);
+}
+
+.compact-input-field:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.col-check {
+  width: 42px;
+  display: flex;
+  justify-content: center;
+}
+
+.check-btn-compact {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.check-btn-compact:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.05);
+}
+
+.check-btn-compact.checked {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: #062419;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  transform: scale(1.02);
+}
+
+/* 3. Inline Micro-stepper Toolbar (Dock) */
+.inline-stepper-dock {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.18s ease-out;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.dock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dock-label {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 58px;
+}
+
+.dock-pill-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.dock-pill-btn:hover {
+  background: var(--bg-elevated);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  transform: translateY(-1px);
+}
+
+.dock-pill-btn.copy {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--accent-primary);
+}
+
+.dock-pill-btn.copy:hover {
+  background: rgba(16, 185, 129, 0.22);
+}
+
+.dock-type-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.type-pill {
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.type-pill.active {
+  background: var(--accent-primary);
+  color: #062419;
+  border-color: var(--accent-primary);
+  font-weight: 800;
+}
+
+/* 4. Exercise Tips Drawer */
+.exercise-tips-drawer {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.tips-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tips-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-warning);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tips-content {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.tips-content ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+.tips-content li {
+  margin-bottom: 3px;
+}
+
+/* 5. Plate Calculator Modal */
+.plate-calc-container {
+  padding: 10px 0;
+}
+
+.plate-summary-hero {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.plate-total-display {
+  font-family: var(--font-mono);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--accent-primary);
+}
+
+.plate-formula-display {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.barbell-visual-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 16px 0;
+  padding: 10px 0;
+  overflow-x: auto;
+}
+
+.plate-chip-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  margin: 2px 4px;
+}
+
+.plate-25 { background: #ef4444; } /* Red */
+.plate-20 { background: #3b82f6; } /* Blue */
+.plate-15 { background: #eab308; color: #111; } /* Yellow */
+.plate-10 { background: #10b981; } /* Green */
+.plate-5  { background: #f8fafc; color: #111; } /* White */
+.plate-2_5 { background: #1e293b; border: 1px solid #475569; } /* Black */
+.plate-1_25 { background: #94a3b8; color: #111; } /* Silver */
+
+/* 6. Workout Celebration Summary Modal */
+.celebration-badge-hero {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 12px auto;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.4);
+}
+
+.celebration-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.celebration-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.celebration-stat-val {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent-primary);
+}
+
+.celebration-stat-lbl {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.quote-bubble {
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid var(--accent-primary);
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 12px;
+}
+
+/* =========================================================
+   SCIENTIFIC VISUALIZATION & ANALYTICS STYLES
+   ========================================================= */
+
+/* Analytics Sub-tabs */
+.analytics-tab-row {
+  display: flex;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.analytics-tab-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.analytics-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-input);
+}
+
+.analytics-tab-btn.active {
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* 1. Muscle Recovery Radar */
+.recovery-hero-card {
+  background: linear-gradient(135deg, rgba(16, 24, 39, 0.95) 0%, rgba(30, 41, 59, 0.7) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.recovery-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.recovery-row-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recovery-label-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+}
+
+.recovery-track {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.recovery-fill-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recovery-fill-bar.ready {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.recovery-fill-bar.recovering {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.recovery-fill-bar.fatigued {
+  background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+}
+
+/* 2. Weekly Effective Sets */
+.weekly-balance-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.weekly-sets-item {
+  margin-bottom: 10px;
+}
+
+.weekly-sets-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+
+.weekly-target-zone-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 3. Personal Records Wall */
+.pr-hall-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.pr-card-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: all var(--transition-fast);
+}
+
+.pr-card-item.big3 {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+
+.pr-card-item:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-primary);
+}
+
+.pr-val-display {
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--accent-primary);
+}
+
+/* 4. Consistency Heatmap */
+.heatmap-container {
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  gap: 3px;
+  width: max-content;
+}
+
+.heatmap-cell {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.3);
+  z-index: 10;
+}
+
+.heatmap-cell.lvl-0 { background: rgba(255, 255, 255, 0.04); }
+.heatmap-cell.lvl-1 { background: rgba(16, 185, 129, 0.3); }
+.heatmap-cell.lvl-2 { background: rgba(16, 185, 129, 0.55); }
+.heatmap-cell.lvl-3 { background: rgba(16, 185, 129, 0.8); }
+.heatmap-cell.lvl-4 { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.streak-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+

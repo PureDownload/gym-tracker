@@ -291,3 +291,56 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
     res.status(500).json({ error: '导出云端备份失败: ' + err.message });
   }
 });
+
+// 5. Get server-cached training stats summary (快速聚合云端缓存统计)
+syncRouter.get('/summary', (req: AuthenticatedRequest, res) => {
+  const userId = req.user!.id;
+  try {
+    const totalRow = db.prepare(`
+      SELECT 
+        COUNT(*) as total_workouts,
+        COALESCE(SUM(duration_minutes), 0) as total_duration_minutes,
+        MIN(date) as first_date,
+        MAX(date) as latest_date
+      FROM workouts
+      WHERE user_id = ? AND is_deleted = 0
+    `).get(userId) as any;
+
+    const rows = db.prepare(`
+      SELECT exercises_json
+      FROM workouts
+      WHERE user_id = ? AND is_deleted = 0
+    `).all(userId) as any[];
+
+    let totalVolumeKg = 0;
+    let totalSets = 0;
+
+    for (const r of rows) {
+      const exList = JSON.parse(r.exercises_json || '[]');
+      for (const ex of exList) {
+        for (const s of (ex.sets || [])) {
+          if (s.isCompleted) {
+            totalSets++;
+            totalVolumeKg += (s.weightKg || 0) * (s.reps || 0);
+          }
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      cachedAt: Date.now(),
+      stats: {
+        totalWorkouts: totalRow?.total_workouts || 0,
+        totalDurationMinutes: totalRow?.total_duration_minutes || 0,
+        totalVolumeKg,
+        totalSets,
+        firstWorkoutDate: totalRow?.first_date || null,
+        latestWorkoutDate: totalRow?.latest_date || null,
+      },
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: '获取云端数据统计失败: ' + err.message });
+  }
+});
+

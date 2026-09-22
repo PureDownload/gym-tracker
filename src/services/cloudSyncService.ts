@@ -20,15 +20,26 @@ class CloudSyncService {
 
   constructor() {
     this.refreshInitialStatus();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', () => {
+        this.flushPendingQueueSilently();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          this.flushPendingQueueSilently();
+        }
+      });
+    }
   }
 
   private refreshInitialStatus() {
     const config = cloudAuthService.getConfig();
+    const pendingQueue = storageService.getPendingSyncQueue();
     this.currentStatus = {
-      state: config.mode === 'cloud_sync' && config.token ? 'offline_pending' : 'local',
+      state: config.mode === 'cloud_sync' && config.token ? (pendingQueue.length > 0 ? 'offline_pending' : 'online') : 'local',
       lastSyncTime: config.lastSyncTime || 0,
       pingMs: null,
-      pendingCount: 0,
+      pendingCount: pendingQueue.length,
       errorMessage: null,
     };
   }
@@ -234,7 +245,7 @@ class CloudSyncService {
     }
   }
 
-  // Silent sync after user saves a workout
+  // Silent sync after user saves a workout (with persistent offline queue fallback)
   public async silentSyncOnSave(session: WorkoutSession): Promise<void> {
     const config = cloudAuthService.getConfig();
     if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token || !config.autoSyncOnSave) {
@@ -260,17 +271,34 @@ class CloudSyncService {
       if (res.ok) {
         const data = await res.json();
         cloudAuthService.saveConfig({ lastSyncTime: data.serverTime || Date.now() });
-        this.setStatus({ state: 'online', lastSyncTime: Date.now(), pendingCount: 0 });
+        this.setStatus({ state: 'online', lastSyncTime: Date.now(), pendingCount: storageService.getPendingSyncQueue().length });
       } else {
-        this.setStatus({ state: 'offline_pending', pendingCount: this.currentStatus.pendingCount + 1 });
+        // Enqueue to persistent storage
+        storageService.enqueuePendingSync({
+          type: 'upsert_workout',
+          payload: session,
+          timestamp: Date.now(),
+        });
+        this.setStatus({
+          state: 'offline_pending',
+          pendingCount: storageService.getPendingSyncQueue().length,
+        });
       }
     } catch (e) {
-      // Offline fallback: don't disturb the user
-      this.setStatus({ state: 'offline_pending', pendingCount: this.currentStatus.pendingCount + 1 });
+      // Offline fallback: save to persistent queue
+      storageService.enqueuePendingSync({
+        type: 'upsert_workout',
+        payload: session,
+        timestamp: Date.now(),
+      });
+      this.setStatus({
+        state: 'offline_pending',
+        pendingCount: storageService.getPendingSyncQueue().length,
+      });
     }
   }
 
-  // Silent sync after user deletes a workout
+  // Silent sync after user deletes a workout (with persistent offline queue fallback)
   public async silentSyncOnDelete(id: string): Promise<void> {
     const config = cloudAuthService.getConfig();
     if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) {
@@ -279,7 +307,7 @@ class CloudSyncService {
 
     try {
       const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
-      await fetch(`${serverUrl}/api/sync/push`, {
+      const res = await fetch(`${serverUrl}/api/sync/push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -293,8 +321,60 @@ class CloudSyncService {
           }],
         }),
       });
+      if (!res.ok) {
+        storageService.enqueuePendingSync({
+          type: 'delete_workout',
+          payload: { id },
+          timestamp: Date.now(),
+        });
+        this.setStatus({ state: 'offline_pending', pendingCount: storageService.getPendingSyncQueue().length });
+      }
     } catch (e) {
-      this.setStatus({ state: 'offline_pending' });
+      storageService.enqueuePendingSync({
+        type: 'delete_workout',
+        payload: { id },
+        timestamp: Date.now(),
+      });
+      this.setStatus({ state: 'offline_pending', pendingCount: storageService.getPendingSyncQueue().length });
+    }
+  }
+
+  // Flush persistent offline pending queue silently when connection is restored
+  public async flushPendingQueueSilently(): Promise<void> {
+    const config = cloudAuthService.getConfig();
+    if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) {
+      return;
+    }
+
+    const queue = storageService.getPendingSyncQueue();
+    if (queue.length === 0) return;
+
+    try {
+      const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
+      const workoutsPayload = queue.map((item) => {
+        if (item.type === 'delete_workout') {
+          return { id: item.payload.id, isDeleted: true, updatedAt: item.timestamp };
+        }
+        return { ...item.payload, updatedAt: item.timestamp };
+      });
+
+      const res = await fetch(`${serverUrl}/api/sync/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.token}`,
+        },
+        body: JSON.stringify({ workouts: workoutsPayload }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        storageService.clearPendingSyncQueue();
+        cloudAuthService.saveConfig({ lastSyncTime: data.serverTime || Date.now() });
+        this.setStatus({ state: 'online', pendingCount: 0 });
+      }
+    } catch (e) {
+      // Still offline, will retry next time
     }
   }
 

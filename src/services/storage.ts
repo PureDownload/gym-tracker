@@ -7,6 +7,13 @@ const CUSTOM_EXERCISES_STORE = 'custom_exercises';
 const LS_WORKOUTS_KEY = 'irontrack_workouts_backup';
 const LS_CUSTOM_EX_KEY = 'irontrack_custom_exercises';
 const LS_PINNED_EX_KEY = 'irontrack_pinned_exercises';
+const LS_PENDING_QUEUE_KEY = 'irontrack_pending_sync_queue';
+
+export interface PendingSyncItem {
+  type: 'upsert_workout' | 'delete_workout';
+  payload: any;
+  timestamp: number;
+}
 
 class StorageService {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -475,6 +482,28 @@ class StorageService {
       },
     ];
   }
+
+  // ==========================================
+  // Offline Sync Queue (离线待办同步队列)
+  // ==========================================
+  getPendingSyncQueue(): PendingSyncItem[] {
+    return this.getFromLocalStorage<PendingSyncItem[]>(LS_PENDING_QUEUE_KEY) || [];
+  }
+
+  enqueuePendingSync(item: PendingSyncItem): void {
+    const queue = this.getPendingSyncQueue();
+    // Deduplicate if same workout ID already in queue
+    const filtered = queue.filter(
+      (q) => !(q.type === item.type && q.payload?.id === item.payload?.id)
+    );
+    filtered.push(item);
+    this.saveToLocalStorage(LS_PENDING_QUEUE_KEY, filtered);
+  }
+
+  clearPendingSyncQueue(): void {
+    this.saveToLocalStorage(LS_PENDING_QUEUE_KEY, []);
+  }
 }
 
 export const storageService = new StorageService();
+
