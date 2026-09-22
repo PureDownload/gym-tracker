@@ -1,0 +1,9 @@
+{
+  "version": "1.0.1",
+  "name": "IronTrack 铁脉健身 v1.0.1",
+  "body": "### 新增特性\n- 自动化 Release 与应用内无感更新系统\n- 动作库与超负荷渐进计算优化\n- 离线 IndexedDB 持久化与数据导出支持",
+  "published_at": "2026-09-12T10:00:00Z",
+  "apk_name": "IronTrack-v1.0.1.apk",
+  "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.0.1/IronTrack-v1.0.1.apk",
+  "html_url": "https://github.com/PureDownload/gym-tracker/releases"
+}

@@ -11,10 +11,11 @@
 - [二、 整体技术架构与时序设计](#二-整体技术架构与时序设计)
 - [三、 CI/CD 自动化构建与发布流水线](#三-cicd-自动化构建与发布流水线)
 - [四、 客户端版本检测与 SemVer 比对算法](#四-客户端版本检测与-semver-比对算法)
-- [五、 国内网络环境加速下载方案](#五-国内网络环境加速下载方案)
-- [六、 核心避坑：Android 签名与覆盖安装机制](#六-核心避坑android-签名与覆盖安装机制)
-- [七、 进阶选型对比：全量 APK 更新 vs 前端热更新](#七-进阶选型对比全量-apk-更新-vs-前端热更新)
-- [八、 快速上手与操作手册](#八-快速上手与操作手册)
+- [五、 核心防坑：GitHub API 频次限制与 CDN 自动容灾降级](#五-核心防坑github-api-频次限制与-cdn-自动容灾降级)
+- [六、 国内网络环境加速下载方案](#六-国内网络环境加速下载方案)
+- [七、 核心避坑：Android 签名与覆盖安装机制](#七-核心避坑android-签名与覆盖安装机制)
+- [八、 进阶选型对比：全量 APK 更新 vs 前端热更新](#八-进阶选型对比全量-apk-更新-vs-前端热更新)
+- [九、 快速上手与操作手册（含 GitHub Desktop 图形化操作）](#九-快速上手与操作手册含-github-desktop-图形化操作)
 
 ---
 
@@ -226,7 +227,56 @@ export function compareSemVer(v1: string, v2: string): number {
 
 ---
 
-## 五、 国内网络环境加速下载方案
+## 五、 核心防坑：GitHub API 频次限制与 CDN 自动容灾降级
+
+在实际发布与用户使用过程中，最容易遇到的报错莫过于：
+```text
+API rate limit exceeded for 52.199.249.210. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)
+```
+
+> [!WARNING]
+> 该错误会导致客户端检查更新直接失败并弹窗报错，必须在架构层面进行彻底规避！
+
+### 1. 深度成因剖析
+- **GitHub 官方安全频控**：对于未携带个人 Access Token 的匿名公开请求，GitHub REST API 对单个 IP 施加了严格的配额管控——**每小时最多仅允许 60 次 API 请求**。
+- **公共代理/梯子出口 IP 共享池**：报错中展示的 IP（如 `52.199.249.210`）属于 AWS 日本东京机房，是市面上大部分科学上网工具（Clash、Surge、V2Ray 等）常用的代理节点。
+- **额度瞬间耗尽**：一个代理节点的出口 IP 会被成百上千名用户共享。只要有其他用户在该节点下频繁浏览 GitHub、拉取代码或执行自动化脚本，属于这个 IP 的 60 次公共配额会在**几秒钟内彻底耗尽**，从而触发 GitHub 对该 IP 的临时封禁（锁定 1 小时）。
+
+### 2. 架构破局：双引擎机制（Dual-Engine）与全球 CDN 容灾
+如果强行让每个 App 用户去 GitHub 申请 Personal Access Token，对于普通健身用户来说体验是灾难性的。
+
+**最佳实践**：采用 **“REST API + 全球静态 CDN” 双引擎容灾架构**：
+```mermaid
+graph TD
+    A[App 发起检查更新] --> B[尝试请求 GitHub REST API]
+    B -->|HTTP 200 成功| C[解析 Release 信息并展示]
+    B -->|HTTP 403 限流 / 超时| D[自动触发无感容灾降级]
+    D --> E[请求全球 jsdelivr CDN 静态 version.json]
+    E -->|免限流秒级响应| C
+    E -->|极端异常兜底| F[读取 CDN package.json]
+    F --> C
+```
+
+1. **维护静态版本元数据**：
+   在项目根目录维护 [`public/version.json`](file:///Users/chunxiao/Documents/web/me/gym-tracker/public/version.json)：
+   ```json
+   {
+     "version": "1.0.1",
+     "name": "IronTrack 铁脉健身 v1.0.1",
+     "body": "### 新增特性\n- 自动化 Release 与更新系统\n- 动作库分类筛选",
+     "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.0.1/IronTrack-v1.0.1.apk"
+   }
+   ```
+2. **免限流全球 CDN 节点（jsdelivr）**：
+   静态资源可通过 `https://cdn.jsdelivr.net/gh/PureDownload/gym-tracker@main/public/version.json` 访问。
+   - **零频次限制**：完全独立于 GitHub REST API，没有任何每小时 60 次的限制。
+   - **国内直连极速**：通过 Cloudflare + Fastly 全球边缘节点加速，大陆移动蜂窝网络秒开。
+3. **客户端自动降级逻辑**：
+   在 [`updateService.ts`](file:///Users/chunxiao/Documents/web/me/gym-tracker/src/services/updateService.ts) 中捕获 `response.status === 403` 或网络超时，毫秒级静默切换至 CDN，普通用户完全感知不到任何报错，体验丝滑稳定。
+
+---
+
+## 六、 国内网络环境加速下载方案
 
 在某些特定网络环境下，`github.com` 或其资产存储节点 `github-releases.githubusercontent.com` 可能会偶发连接缓慢或超时。
 
@@ -242,7 +292,7 @@ export function compareSemVer(v1: string, v2: string): number {
 
 ---
 
-## 六、 核心避坑：Android 签名与覆盖安装机制
+## 七、 核心避坑：Android 签名与覆盖安装机制
 
 > [!CAUTION]
 > **覆盖升级的最底层铁律：Keystore 签名指纹必须终身保持一致！**
@@ -295,7 +345,7 @@ base64 -i irontrack-release.keystore | tr -d '\n' > keystore_base64.txt
 
 ---
 
-## 七、 进阶选型对比：全量 APK 更新 vs 前端热更新
+## 八、 进阶选型对比：全量 APK 更新 vs 前端热更新
 
 由于 IronTrack 铁脉健身基于 **Capacitor 跨平台架构**，除了全量 APK 覆盖安装外，理论上还支持“热更新（Live Update）”技术：
 
@@ -311,19 +361,38 @@ base64 -i irontrack-release.keystore | tr -d '\n' > keystore_base64.txt
 
 ---
 
-## 八、 快速上手与操作手册
+## 九、 快速上手与操作手册
 
-### 开发者发布新版本流程（3步走）：
-1. **修改版本号**：在 `package.json` 中修改版本，如 `"version": "1.0.1"`。
-2. **提交代码并打标签**：
-   ```bash
-   git add .
-   git commit -m "chore(release): bump version to v1.0.1"
-   git push origin main
-   git tag v1.0.1
-   git push origin v1.0.1
-   ```
-3. **静候自动化发布**：
-   - 前往 GitHub 仓库的 **Actions** 标签页，查看编译进度（约 2~3 分钟）。
-   - 编译完成后，检查 **Releases** 页面，确认 `IronTrack-v1.0.1.apk` 已生成并上线。
-   - 打开手机上的 IronTrack App，点击顶部 Header 中的更新图标，即可直接看到新版本更新日志并下载安装！
+发布新版本支持 **GitHub Desktop 纯图形界面** 与 **终端命令行** 两种方式：
+
+### 方式一：GitHub Desktop 图形化操作（新手推荐）
+1. **修改版本号**：在编辑器中将 `package.json` 中的版本号修改为新版本（如 `"version": "1.0.1"`），并同步更新 `public/version.json` 中的版本与更新说明。
+2. **提交与推送**：
+   - 打开 GitHub Desktop，左侧 **Changes** 栏会列出修改过的文件；
+   - 在左下角 Summary 输入如 `release: v1.0.1`，点击 **`Commit to main`**；
+   - 点击顶部工具栏右侧的 **`Push origin`** 按钮推送到 GitHub。
+3. **在 GitHub Desktop 中打 Tag（关键步）**：
+   - 点击切换到左侧的 **`History`（历史记录）** 选项卡；
+   - 找到顶部的最新一条提交记录，**鼠标右键**点击；
+   - 选择 **`Create Tag...`**，输入以 `v` 开头的标签名（如 `v1.0.1`），点击 **Create Tag**。
+4. **推送标签到云端**：
+   - 观察顶部工具栏按钮变为带有标签提示的 **`Push origin`**，点击推送！
+5. **验证产物**：
+   - 按快捷键 `Command + Shift + G`（或菜单 `Repository` -> `View on GitHub`）；
+   - 在 GitHub 的 **Actions** 页可查看打包进度（2~3 分钟）；
+   - 在 **Releases** 页面即可看到打包完成并带下载直链的 `IronTrack-v1.0.1.apk`！
+
+---
+
+### 方式二：终端命令行操作（极客推荐）
+```bash
+# 1. 提交新版本代码
+git add .
+git commit -m "chore(release): bump version to v1.0.1"
+git push origin main
+
+# 2. 打标签并推送到 GitHub 触发自动发布
+git tag v1.0.1
+git push origin v1.0.1
+```
+

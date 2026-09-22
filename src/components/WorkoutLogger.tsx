@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Check, Search, CheckCircle2, Pin, Sparkles } from 'lucide-react';
+import { Plus, Minus, Trash2, Check, Search, CheckCircle2, Pin, Sparkles } from 'lucide-react';
 import type { MuscleGroup, EquipmentType, Exercise, WorkoutExercise, WorkoutSet, WorkoutSession } from '../types/workout';
 import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS } from '../data/presetExercises';
 
@@ -548,100 +548,74 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
             {/* CARDIO MODE vs STRENGTH MODE SETS TABLE */}
             {isCardio ? (
-              // --- CARDIO INPUT VIEW ---
-              <div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '32px 1.1fr 1.1fr 1fr 38px',
-                    gap: '6px',
-                    fontSize: '0.72rem',
-                    color: 'var(--text-muted)',
-                    textAlign: 'center',
-                    marginBottom: '6px',
-                    padding: '0 4px',
-                  }}
-                >
-                  <span>组</span>
-                  <span>时长 (分)</span>
-                  <span>距离 (km)</span>
-                  <span>热量/心率</span>
-                  <span>完成</span>
-                </div>
+              // --- CARDIO SLIDER INPUT VIEW ---
+              <div className="sets-table-wrapper">
+                {exerciseEntry.sets.map((set, setIdx) => {
+                  const durVal = Number(set.durationMinutes) || 0;
+                  const distVal = Number(set.distanceKm) || 0;
+                  const durMax = Math.max(90, durVal + 15);
+                  const durPct = Math.min(100, Math.max(0, ((Math.max(1, durVal) - 1) / (durMax - 1)) * 100));
 
-                <div className="sets-table-wrapper">
-                  {exerciseEntry.sets.map((set, setIdx) => (
-                    <div key={set.id}>
-                      <div
-                        className={`set-row ${set.isCompleted ? 'completed' : ''}`}
-                        style={{ gridTemplateColumns: '32px 1.1fr 1.1fr 1fr 38px', gap: '6px' }}
-                      >
-                        <div className="set-num-badge">{set.setNumber}</div>
+                  const distMax = Math.max(20, Math.ceil((distVal + 3) / 5) * 5);
+                  const distPct = Math.min(100, Math.max(0, (distVal / distMax) * 100));
 
-                        {/* Duration Minutes */}
-                        <div className="set-input-group">
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            className="set-input"
-                            value={set.durationMinutes ? set.durationMinutes : ''}
-                            placeholder="30"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSet(
-                                exIdx,
-                                setIdx,
-                                'durationMinutes',
-                                val === '' ? 0 : parseInt(val, 10) || 0
-                              );
-                            }}
-                          />
-                          <span className="set-input-unit">分</span>
-                        </div>
+                  return (
+                    <div key={set.id} className={`set-card-block ${set.isCompleted ? 'completed' : ''}`}>
+                      {/* Cardio Header Row */}
+                      <div className="set-card-header-row">
+                        <div className="set-card-left-info">
+                          <div className="set-num-badge">{set.setNumber}</div>
 
-                        {/* Distance Km */}
-                        <div className="set-input-group">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            className="set-input"
-                            value={set.distanceKm ? set.distanceKm : ''}
-                            placeholder="5.0"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSet(
-                                exIdx,
-                                setIdx,
-                                'distanceKm',
-                                val === '' ? 0 : parseFloat(val) || 0
-                              );
-                            }}
-                          />
-                          <span className="set-input-unit">km</span>
-                        </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>时长:</span>
+                            <input
+                              type="number"
+                              step="1"
+                              min="1"
+                              className="slider-value-input"
+                              value={set.durationMinutes || ''}
+                              placeholder="30"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateSet(exIdx, setIdx, 'durationMinutes', val === '' ? 0 : parseInt(val, 10) || 0);
+                              }}
+                            />
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>分</span>
+                          </div>
 
-                        {/* Calories / Heart Rate */}
-                        <div className="set-input-group">
-                          <input
-                            type="number"
-                            min="0"
-                            step="10"
-                            className="set-input"
-                            value={set.caloriesKcal ? set.caloriesKcal : ''}
-                            placeholder="kcal"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSet(
-                                exIdx,
-                                setIdx,
-                                'caloriesKcal',
-                                val === '' ? 0 : parseInt(val, 10) || 0
-                              );
-                            }}
-                          />
-                          <span className="set-input-unit">cal</span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>距离:</span>
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              className="slider-value-input cyan"
+                              value={set.distanceKm || ''}
+                              placeholder="5.0"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateSet(exIdx, setIdx, 'distanceKm', val === '' ? 0 : parseFloat(val) || 0);
+                              }}
+                            />
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>km</span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>卡路里:</span>
+                            <input
+                              type="number"
+                              step="10"
+                              min="0"
+                              className="slider-value-input"
+                              style={{ width: '46px', color: 'var(--accent-warning)', borderColor: 'rgba(245, 158, 11, 0.25)' }}
+                              value={set.caloriesKcal || ''}
+                              placeholder="cal"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateSet(exIdx, setIdx, 'caloriesKcal', val === '' ? 0 : parseInt(val, 10) || 0);
+                              }}
+                            />
+                          </div>
                         </div>
 
                         <button
@@ -653,119 +627,200 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         </button>
                       </div>
 
-                      {/* Cardio Quick Steppers */}
-                      <div className="stepper-bar" style={{ marginTop: '2px', marginBottom: '8px' }}>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleCardioAdjust(exIdx, setIdx, 5, 0)}
-                        >
-                          +5分钟
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleCardioAdjust(exIdx, setIdx, 10, 0)}
-                        >
-                          +10分钟
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleCardioAdjust(exIdx, setIdx, -5, 0)}
-                        >
-                          -5分钟
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleCardioAdjust(exIdx, setIdx, 0, 0.5)}
-                        >
-                          +0.5km
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleCardioAdjust(exIdx, setIdx, 0, 1.0)}
-                        >
-                          +1.0km
-                        </button>
-                        {exerciseEntry.sets.length > 1 && (
-                          <button
-                            className="step-chip"
-                            style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}
-                            onClick={() => handleRemoveSet(exIdx, setIdx)}
-                          >
-                            删段
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              // --- STRENGTH INPUT VIEW ---
-              <div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '34px 1fr 1fr 40px',
-                    gap: '8px',
-                    fontSize: '0.72rem',
-                    color: 'var(--text-muted)',
-                    textAlign: 'center',
-                    marginBottom: '6px',
-                    padding: '0 4px',
-                  }}
-                >
-                  <span>组数</span>
-                  <span>重量 (kg)</span>
-                  <span>次数 (reps)</span>
-                  <span>打勾</span>
-                </div>
+                      {/* Cardio Sliding Controls Panel */}
+                      <div className="set-sliders-box">
+                        {/* 1. Duration Slider */}
+                        <div className="slider-group">
+                          <div className="slider-label-row">
+                            <span className="slider-label-name">
+                              <span>⏱️ 时长滑动</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>1~{durMax}分</span>
+                            </span>
+                            <span className="slider-value-pill">{durVal} 分钟</span>
+                          </div>
 
-                <div className="sets-table-wrapper">
-                  {exerciseEntry.sets.map((set, setIdx) => (
-                    <div key={set.id}>
-                      <div className={`set-row ${set.isCompleted ? 'completed' : ''}`}>
-                        <div className="set-num-badge">{set.setNumber}</div>
+                          <div className="slider-row">
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleCardioAdjust(exIdx, setIdx, -5, 0)}
+                              title="减少5分钟"
+                            >
+                              -5分
+                            </button>
 
-                        <div className="set-input-group">
-                          <input
-                            type="number"
-                            step="0.5"
-                            min="0"
-                            className="set-input"
-                            value={set.weightKg === 0 ? '' : set.weightKg}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSet(
-                                exIdx,
-                                setIdx,
-                                'weightKg',
-                                val === '' ? 0 : parseFloat(val) || 0
-                              );
-                            }}
-                          />
-                          <span className="set-input-unit">kg</span>
+                            <input
+                              type="range"
+                              min="1"
+                              max={durMax}
+                              step="1"
+                              value={durVal}
+                              className="custom-slider"
+                              style={{
+                                background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${durPct}%, var(--bg-input) ${durPct}%, var(--bg-input) 100%)`
+                              }}
+                              onChange={(e) => {
+                                handleUpdateSet(exIdx, setIdx, 'durationMinutes', parseInt(e.target.value, 10) || 1);
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleCardioAdjust(exIdx, setIdx, 5, 0)}
+                              title="增加5分钟"
+                            >
+                              +5分
+                            </button>
+                          </div>
+
+                          {/* Quick Duration Chips */}
+                          <div className="slider-quick-chips">
+                            {[15, 20, 30, 45, 60, 90].map((m) => (
+                              <button
+                                key={m}
+                                type="button"
+                                className={`slider-chip-btn ${durVal === m ? 'active' : ''}`}
+                                onClick={() => handleUpdateSet(exIdx, setIdx, 'durationMinutes', m)}
+                              >
+                                {m}分钟
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
-                        <div className="set-input-group">
-                          <input
-                            type="number"
-                            step="1"
-                            min="0"
-                            className="set-input"
-                            value={set.reps === 0 ? '' : set.reps}
-                            placeholder="0"
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateSet(
-                                exIdx,
-                                setIdx,
-                                'reps',
-                                val === '' ? 0 : parseInt(val, 10) || 0
-                              );
-                            }}
-                          />
-                          <span className="set-input-unit">次</span>
+                        {/* 2. Distance Slider */}
+                        <div className="slider-group" style={{ marginTop: '2px' }}>
+                          <div className="slider-label-row">
+                            <span className="slider-label-name">
+                              <span>🏃 距离滑动</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>0~{distMax}km</span>
+                            </span>
+                            <span className="slider-value-pill cyan">{distVal.toFixed(1)} km</span>
+                          </div>
+
+                          <div className="slider-row">
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleCardioAdjust(exIdx, setIdx, 0, -0.5)}
+                              title="减少0.5km"
+                            >
+                              -0.5
+                            </button>
+
+                            <input
+                              type="range"
+                              min="0"
+                              max={distMax}
+                              step="0.1"
+                              value={distVal}
+                              className="custom-slider cyan"
+                              style={{
+                                background: `linear-gradient(to right, var(--accent-cyan) 0%, var(--accent-cyan) ${distPct}%, var(--bg-input) ${distPct}%, var(--bg-input) 100%)`
+                              }}
+                              onChange={(e) => {
+                                handleUpdateSet(exIdx, setIdx, 'distanceKm', parseFloat(e.target.value) || 0);
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleCardioAdjust(exIdx, setIdx, 0, 0.5)}
+                              title="增加0.5km"
+                            >
+                              +0.5
+                            </button>
+                          </div>
+
+                          {/* Quick Distance Chips */}
+                          <div className="slider-quick-chips">
+                            {[
+                              { d: 1, label: '1km' },
+                              { d: 3, label: '3km' },
+                              { d: 5, label: '5km 燃脂' },
+                              { d: 8, label: '8km' },
+                              { d: 10, label: '10km' },
+                            ].map((item) => (
+                              <button
+                                key={item.d}
+                                type="button"
+                                className={`slider-chip-btn cyan ${distVal === item.d ? 'active' : ''}`}
+                                onClick={() => handleUpdateSet(exIdx, setIdx, 'distanceKm', item.d)}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // --- STRENGTH SLIDER INPUT VIEW ---
+              <div className="sets-table-wrapper">
+                {exerciseEntry.sets.map((set, setIdx) => {
+                  const weightVal = Number(set.weightKg) || 0;
+                  const repsVal = Number(set.reps) || 0;
+                  const weightMax = Math.max(160, Math.ceil((weightVal + 30) / 10) * 10);
+                  const weightPct = Math.min(100, Math.max(0, (weightVal / weightMax) * 100));
+
+                  const repsMax = Math.max(30, repsVal + 5);
+                  const repsPct = Math.min(100, Math.max(0, ((Math.max(1, repsVal) - 1) / (repsMax - 1)) * 100));
+
+                  return (
+                    <div key={set.id} className={`set-card-block ${set.isCompleted ? 'completed' : ''}`}>
+                      {/* Set Header: Badge, Direct Numeric Input, Check Button */}
+                      <div className="set-card-header-row">
+                        <div className="set-card-left-info">
+                          <div className="set-num-badge">{set.setNumber}</div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>重量:</span>
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              className="slider-value-input"
+                              value={set.weightKg === 0 ? '' : set.weightKg}
+                              placeholder="0"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateSet(
+                                  exIdx,
+                                  setIdx,
+                                  'weightKg',
+                                  val === '' ? 0 : parseFloat(val) || 0
+                                );
+                              }}
+                            />
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>kg</span>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>次数:</span>
+                            <input
+                              type="number"
+                              step="1"
+                              min="1"
+                              className="slider-value-input cyan"
+                              value={set.reps === 0 ? '' : set.reps}
+                              placeholder="0"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateSet(
+                                  exIdx,
+                                  setIdx,
+                                  'reps',
+                                  val === '' ? 0 : parseInt(val, 10) || 0
+                                );
+                              }}
+                            />
+                            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>次</span>
+                          </div>
                         </div>
 
                         <button
@@ -777,63 +832,174 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         </button>
                       </div>
 
-                      {/* Strength Micro Steppers */}
-                      <div className="stepper-bar" style={{ marginTop: '2px', marginBottom: '8px' }}>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleStrengthAdjust(exIdx, setIdx, 2.5, 0)}
-                        >
-                          +2.5kg
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleStrengthAdjust(exIdx, setIdx, 5, 0)}
-                        >
-                          +5kg
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleStrengthAdjust(exIdx, setIdx, -2.5, 0)}
-                        >
-                          -2.5kg
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleStrengthAdjust(exIdx, setIdx, 0, 1)}
-                        >
-                          +1次
-                        </button>
-                        <button
-                          className="step-chip"
-                          onClick={() => handleStrengthAdjust(exIdx, setIdx, 0, -1)}
-                        >
-                          -1次
-                        </button>
-                        {exerciseEntry.sets.length > 1 && (
-                          <button
-                            className="step-chip"
-                            style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}
-                            onClick={() => handleRemoveSet(exIdx, setIdx)}
-                          >
-                            删组
-                          </button>
-                        )}
+                      {/* Sliding Controls Panel */}
+                      <div className="set-sliders-box">
+                        {/* 1. Weight Slider */}
+                        <div className="slider-group">
+                          <div className="slider-label-row">
+                            <span className="slider-label-name">
+                              <span>🏋️ 重量滑动</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>0~{weightMax}kg</span>
+                            </span>
+                            <span className="slider-value-pill">{weightVal.toFixed(weightVal % 1 === 0 ? 0 : 1)} kg</span>
+                          </div>
+
+                          <div className="slider-row">
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleStrengthAdjust(exIdx, setIdx, -2.5, 0)}
+                              title="减少2.5kg"
+                            >
+                              -2.5
+                            </button>
+
+                            <input
+                              type="range"
+                              min="0"
+                              max={weightMax}
+                              step="0.5"
+                              value={weightVal}
+                              className="custom-slider"
+                              style={{
+                                background: `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${weightPct}%, var(--bg-input) ${weightPct}%, var(--bg-input) 100%)`
+                              }}
+                              onChange={(e) => {
+                                handleUpdateSet(exIdx, setIdx, 'weightKg', parseFloat(e.target.value) || 0);
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleStrengthAdjust(exIdx, setIdx, 2.5, 0)}
+                              title="增加2.5kg"
+                            >
+                              +2.5
+                            </button>
+                          </div>
+
+                          {/* Quick Weight Chips */}
+                          <div className="slider-quick-chips">
+                            {[20, 40, 50, 60, 70, 80, 100].map((w) => (
+                              <button
+                                key={w}
+                                type="button"
+                                className={`slider-chip-btn ${weightVal === w ? 'active' : ''}`}
+                                onClick={() => handleUpdateSet(exIdx, setIdx, 'weightKg', w)}
+                              >
+                                {w === 20 ? '空杆20kg' : `${w}kg`}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              className="slider-chip-btn"
+                              onClick={() => handleStrengthAdjust(exIdx, setIdx, 5, 0)}
+                            >
+                              +5kg
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 2. Reps Slider */}
+                        <div className="slider-group" style={{ marginTop: '2px' }}>
+                          <div className="slider-label-row">
+                            <span className="slider-label-name">
+                              <span>🔄 次数滑动</span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>1~{repsMax}次</span>
+                            </span>
+                            <span className="slider-value-pill cyan">{repsVal} 次</span>
+                          </div>
+
+                          <div className="slider-row">
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleStrengthAdjust(exIdx, setIdx, 0, -1)}
+                              title="减少1次"
+                            >
+                              -1
+                            </button>
+
+                            <input
+                              type="range"
+                              min="1"
+                              max={repsMax}
+                              step="1"
+                              value={repsVal}
+                              className="custom-slider cyan"
+                              style={{
+                                background: `linear-gradient(to right, var(--accent-cyan) 0%, var(--accent-cyan) ${repsPct}%, var(--bg-input) ${repsPct}%, var(--bg-input) 100%)`
+                              }}
+                              onChange={(e) => {
+                                handleUpdateSet(exIdx, setIdx, 'reps', parseInt(e.target.value, 10) || 1);
+                              }}
+                            />
+
+                            <button
+                              type="button"
+                              className="slider-step-btn"
+                              onClick={() => handleStrengthAdjust(exIdx, setIdx, 0, 1)}
+                              title="增加1次"
+                            >
+                              +1
+                            </button>
+                          </div>
+
+                          {/* Quick Reps Chips */}
+                          <div className="slider-quick-chips">
+                            {[
+                              { r: 6, label: '6次(力量)' },
+                              { r: 8, label: '8次(增肌)' },
+                              { r: 10, label: '10次' },
+                              { r: 12, label: '12次(黄金)' },
+                              { r: 15, label: '15次(泵感)' },
+                              { r: 20, label: '20次(耐力)' },
+                            ].map((item) => (
+                              <button
+                                key={item.r}
+                                type="button"
+                                className={`slider-chip-btn cyan ${repsVal === item.r ? 'active' : ''}`}
+                                onClick={() => handleUpdateSet(exIdx, setIdx, 'reps', item.r)}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* Add Set Button */}
-            <button
-              className="btn-secondary"
-              onClick={() => handleAddSet(exIdx)}
-              style={{ marginTop: '4px' }}
-            >
-              <Plus size={16} />
-              {isCardio ? '添加有氧段落/间歇' : '添加一组'}
-            </button>
+            {/* Set Management Dual Buttons Row: Add Set & Delete Set */}
+            <div className="sets-manage-row">
+              <button
+                type="button"
+                className="btn-manage-set btn-add-set"
+                onClick={() => handleAddSet(exIdx)}
+              >
+                <Plus size={16} />
+                <span>{isCardio ? '添加有氧段落' : '添加一组'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-manage-set btn-del-set"
+                disabled={exerciseEntry.sets.length <= 1}
+                onClick={() => {
+                  if (exerciseEntry.sets.length > 1) {
+                    handleRemoveSet(exIdx, exerciseEntry.sets.length - 1);
+                  }
+                }}
+                title={exerciseEntry.sets.length <= 1 ? '至少保留一组' : '删除最后一组'}
+              >
+                <Minus size={16} />
+                <span>{isCardio ? '删除末段' : '删除一组'}</span>
+              </button>
+            </div>
           </div>
         );
       })}

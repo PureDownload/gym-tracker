@@ -317,6 +317,15 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
                 </div>
               </div>
 
+              <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
+                <div style={{ fontWeight: 800, color: '#a855f7', marginBottom: '4px' }}>
+                  🛡️ 针对公共代理 403 限流的 CDN 自动容灾降级
+                </div>
+                <div style={{ fontSize: '0.78rem' }}>
+                  用户开启梯子时，因万人共用出口 IP 极易撞上 GitHub API 的 60次/小时 匿名频控报错。系统内置<strong>双引擎机制</strong>，一旦遭遇 403 Rate Limit 自动无感降级到全球免费且零限流的 <code>jsdelivr CDN</code> 静态源（<code>public/version.json</code>），彻底免疫限流问题。
+                </div>
+              </div>
+
               <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px' }}>
                 <div style={{ fontWeight: 800, color: '#f43f5e', marginBottom: '4px' }}>
                   🔐 Android Keystore 永久签名与数据平滑保留

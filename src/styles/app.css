@@ -367,6 +367,293 @@
   border-color: var(--accent-primary);
 }
 
+/* Set Management Dual Buttons Row (添加一组 + 删除一组) */
+.sets-manage-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-manage-set {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.btn-add-set {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: var(--accent-primary);
+}
+
+.btn-add-set:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.btn-del-set {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--accent-danger);
+}
+
+.btn-del-set:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--accent-danger);
+  transform: translateY(-1px);
+}
+
+.btn-del-set:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border-subtle);
+  color: var(--text-muted);
+  background: transparent;
+}
+
+/* Set Card Block with Slider Controls */
+.set-card-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+  transition: all var(--transition-fast);
+}
+
+.set-card-block.completed {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.set-card-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.set-card-left-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.set-sliders-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slider-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+
+.slider-label-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.slider-value-pill {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  display: inline-flex;
+  align-items: center;
+}
+
+.slider-value-pill.cyan {
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.25);
+}
+
+.slider-value-input {
+  width: 58px;
+  padding: 3px 4px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  text-align: center;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.slider-value-input:focus {
+  border-color: var(--accent-primary);
+  background: rgba(16, 185, 129, 0.18);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+}
+
+.slider-value-input.cyan {
+  color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.1);
+  border-color: rgba(6, 182, 212, 0.25);
+}
+
+.slider-value-input.cyan:focus {
+  border-color: var(--accent-cyan);
+  background: rgba(6, 182, 212, 0.18);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.35);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slider-step-btn {
+  padding: 4px 8px;
+  min-width: 44px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.slider-step-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.custom-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  outline: none;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--accent-primary);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.custom-slider::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.9);
+}
+
+.custom-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--accent-primary);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+  cursor: pointer;
+}
+
+.custom-slider.cyan::-webkit-slider-thumb {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+}
+
+.custom-slider.cyan::-webkit-slider-thumb:active {
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.9);
+}
+
+.custom-slider.cyan::-moz-range-thumb {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+}
+
+.slider-quick-chips {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.slider-quick-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-chip-btn {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.slider-chip-btn:hover, .slider-chip-btn.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.slider-chip-btn.cyan:hover, .slider-chip-btn.cyan.active {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+
 /* Action Buttons */
 .btn-primary {
   display: inline-flex;

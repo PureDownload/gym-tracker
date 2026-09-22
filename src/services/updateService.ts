@@ -137,7 +137,14 @@ class UpdateService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          // 暂未发布任何 Release
+          // 暂未发布任何 Release，尝试从 CDN 备用源检查
+          const fallback = await this.checkFallbackFromCDN(currentVersion, now);
+          if (fallback) {
+            this.cachedResult = fallback;
+            this.lastCheckTime = now;
+            return fallback;
+          }
+
           const noReleaseResult: UpdateCheckResult = {
             hasUpdate: false,
             currentVersion,
@@ -158,7 +165,14 @@ class UpdateService {
         }
 
         if (response.status === 403) {
-          throw new Error('GitHub API 请求频次超限，请稍候再试');
+          // GitHub API Rate Limit 触发（如代理节点 IP 共享），自动无缝降级至免限流 CDN 静态源
+          const fallback = await this.checkFallbackFromCDN(currentVersion, now);
+          if (fallback) {
+            this.cachedResult = fallback;
+            this.lastCheckTime = now;
+            return fallback;
+          }
+          throw new Error('GitHub API 请求频次超限，且无法连接备用镜像');
         }
 
         throw new Error(`网络响应错误: HTTP ${response.status}`);
@@ -192,6 +206,19 @@ class UpdateService {
       return result;
     } catch (err: any) {
       clearTimeout(timeoutId);
+
+      // 异常情况下尝试 CDN 容灾兜底
+      try {
+        const fallback = await this.checkFallbackFromCDN(currentVersion, now);
+        if (fallback) {
+          this.cachedResult = fallback;
+          this.lastCheckTime = now;
+          return fallback;
+        }
+      } catch {
+        // ignore
+      }
+
       const isAbort = err.name === 'AbortError';
       const errorMsg = isAbort ? '检查更新超时，请检查网络连接' : (err.message || '无法获取更新信息');
 
@@ -211,6 +238,78 @@ class UpdateService {
         error: errorMsg,
       };
     }
+  }
+
+  /**
+   * 当 GitHub API 触发 403 限流或网络异常时，通过全球免费 CDN 静态文件（免限流）拉取最新版本
+   */
+  private async checkFallbackFromCDN(currentVersion: string, now: number): Promise<UpdateCheckResult | null> {
+    const CDN_VERSION_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${GITHUB_REPO}@main/public/version.json`;
+    const CDN_PKG_URL = `https://cdn.jsdelivr.net/gh/${GITHUB_OWNER}/${GITHUB_REPO}@main/package.json`;
+
+    try {
+      // 1. 优先尝试从 jsdelivr CDN 读取 public/version.json
+      const res = await fetch(CDN_VERSION_URL, { cache: 'no-cache' });
+      if (res.ok) {
+        const data = await res.json();
+        const latestVerStr = (data.version || '').trim();
+        if (latestVerStr) {
+          const hasUpdate = this.compareSemVer(latestVerStr, currentVersion) > 0;
+          const tag = latestVerStr.startsWith('v') ? latestVerStr : `v${latestVerStr}`;
+          const apkUrl = data.download_url || `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${tag}/IronTrack-${tag}.apk`;
+
+          return {
+            hasUpdate,
+            currentVersion,
+            latestVersion: tag,
+            releaseName: data.name || `IronTrack 铁脉健身 ${tag}`,
+            releaseNotes: data.body || '新版本发布，包含多项优化与改进',
+            publishedAt: data.published_at || new Date().toISOString(),
+            downloadUrl: apkUrl,
+            assetName: data.apk_name || `IronTrack-${tag}.apk`,
+            assetSize: 0,
+            htmlUrl: data.html_url || `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
+            isPrerelease: false,
+            checkedAt: now,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      // 2. 降级尝试从 package.json 获取远程版本
+      const resPkg = await fetch(CDN_PKG_URL, { cache: 'no-cache' });
+      if (resPkg.ok) {
+        const pkgData = await resPkg.json();
+        const latestVerStr = (pkgData.version || '').trim();
+        if (latestVerStr) {
+          const hasUpdate = this.compareSemVer(latestVerStr, currentVersion) > 0;
+          const tag = latestVerStr.startsWith('v') ? latestVerStr : `v${latestVerStr}`;
+          const apkUrl = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${tag}/IronTrack-${tag}.apk`;
+
+          return {
+            hasUpdate,
+            currentVersion,
+            latestVersion: tag,
+            releaseName: `IronTrack 铁脉健身 ${tag}`,
+            releaseNotes: '新版本发布，建议及时更新以获取最新特性与优化',
+            publishedAt: new Date().toISOString(),
+            downloadUrl: apkUrl,
+            assetName: `IronTrack-${tag}.apk`,
+            assetSize: 0,
+            htmlUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
+            isPrerelease: false,
+            checkedAt: now,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
   }
 
   /**
