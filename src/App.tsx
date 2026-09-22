@@ -14,6 +14,10 @@ import { RestTimer } from './components/RestTimer';
 import { DataBackupModal } from './components/DataBackupModal';
 import { TechDocsModal } from './components/TechDocsModal';
 import { UpdateModal } from './components/UpdateModal';
+import { CloudSyncModal } from './components/CloudSyncModal';
+import { cloudSyncService } from './services/cloudSyncService';
+import { cloudAuthService } from './services/cloudAuthService';
+import type { SyncStatusInfo } from './types/cloud';
 import './styles/base.css';
 import './styles/app.css';
 
@@ -28,6 +32,8 @@ export function App() {
   const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [isTechDocsModalOpen, setIsTechDocsModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatusInfo>(cloudSyncService.getStatus());
   const [updateData, setUpdateData] = useState<UpdateCheckResult | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
   const [isRestTimerActive, setIsRestTimerActive] = useState<boolean>(false);
@@ -64,21 +70,42 @@ export function App() {
 
   useEffect(() => {
     loadData();
+
+    // 订阅云端同步状态
+    const unsubSync = cloudSyncService.subscribe(setSyncStatus);
+    const unsubData = cloudSyncService.onRemoteDataChanged(() => {
+      loadData();
+    });
+
+    // 若已开启私有云模式，启动时在后台静默发起一次同步
+    if (cloudAuthService.isCloudModeActive()) {
+      cloudSyncService.sync().catch(() => {});
+    }
+
     // 启动时后台静默预检更新（非阻塞）
     updateService
       .checkForUpdates(false)
       .then((res) => setUpdateData(res))
       .catch(() => {});
+
+    return () => {
+      unsubSync();
+      unsubData();
+    };
   }, []);
 
   const handleSaveWorkout = async (session: WorkoutSession) => {
     await storageService.saveWorkout(session);
     setWorkouts((prev) => [session, ...prev.filter((w) => w.id !== session.id)]);
+    // 后台静默推送到小主机私有云
+    cloudSyncService.silentSyncOnSave(session);
   };
 
   const handleDeleteWorkout = async (id: string) => {
     await storageService.deleteWorkout(id);
     setWorkouts((prev) => prev.filter((w) => w.id !== id));
+    // 后台静默通知小主机软删除
+    cloudSyncService.silentSyncOnDelete(id);
   };
 
   const handleAddCustomExercise = async (ex: Exercise) => {
@@ -114,6 +141,8 @@ export function App() {
           isWideMode={isWideMode}
           onToggleWideMode={() => setIsWideMode(!isWideMode)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}
+          onOpenCloudModal={() => setIsCloudModalOpen(true)}
+          syncStatus={syncStatus}
           onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
           onOpenUpdateModal={() => {
             setIsUpdateModalOpen(true);
@@ -206,6 +235,13 @@ export function App() {
         <TechDocsModal
           isOpen={isTechDocsModalOpen}
           onClose={() => setIsTechDocsModalOpen(false)}
+        />
+
+        {/* Private Cloud / J1900 Sync Modal */}
+        <CloudSyncModal
+          isOpen={isCloudModalOpen}
+          onClose={() => setIsCloudModalOpen(false)}
+          onDataChanged={loadData}
         />
 
         {/* Application Update Modal */}

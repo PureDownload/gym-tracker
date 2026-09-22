@@ -118,7 +118,7 @@ class StorageService {
     this.saveToLocalStorage(LS_WORKOUTS_KEY, filtered);
   }
 
-  private async saveWorkoutsBulk(list: WorkoutSession[]): Promise<void> {
+  public async saveWorkoutsBulk(list: WorkoutSession[]): Promise<void> {
     try {
       const db = await this.initDB();
       const tx = db.transaction(WORKOUTS_STORE, 'readwrite');
@@ -128,6 +128,34 @@ class StorageService {
       console.warn('Bulk save to IndexedDB failed', e);
     }
     this.saveToLocalStorage(LS_WORKOUTS_KEY, list);
+  }
+
+  public async upsertWorkoutsFromRemote(incoming: WorkoutSession[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const current = await this.getWorkouts();
+    const map = new Map<string, WorkoutSession>();
+    current.forEach(w => map.set(w.id, w));
+    incoming.forEach(w => map.set(w.id, w));
+    const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    await this.saveWorkoutsBulk(merged);
+  }
+
+  public async upsertCustomExercisesFromRemote(incoming: Exercise[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const current = await this.getCustomExercises();
+    const map = new Map<string, Exercise>();
+    current.forEach(e => map.set(e.id, e));
+    incoming.forEach(e => map.set(e.id, e));
+    const merged = Array.from(map.values());
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction(CUSTOM_EXERCISES_STORE, 'readwrite');
+      const store = tx.objectStore(CUSTOM_EXERCISES_STORE);
+      merged.forEach(e => store.put(e));
+    } catch (e) {
+      console.warn('Bulk save custom exercises to IndexedDB failed', e);
+    }
+    this.saveToLocalStorage(LS_CUSTOM_EX_KEY, merged);
   }
 
   // Custom exercises CRUD

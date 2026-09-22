@@ -1,5 +1,6 @@
 import React from 'react';
-import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles } from 'lucide-react';
+import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles, Cloud, RefreshCw } from 'lucide-react';
+import type { SyncStatusInfo } from '../types/cloud';
 
 interface HeaderProps {
   isWideMode: boolean;
@@ -7,6 +8,8 @@ interface HeaderProps {
   onOpenBackupModal: () => void;
   onOpenTechDocsModal: () => void;
   onOpenUpdateModal: () => void;
+  onOpenCloudModal: () => void;
+  syncStatus?: SyncStatusInfo;
   hasUpdate?: boolean;
 }
 
@@ -16,6 +19,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBackupModal,
   onOpenTechDocsModal,
   onOpenUpdateModal,
+  onOpenCloudModal,
+  syncStatus,
   hasUpdate = false,
 }) => {
   return (
@@ -72,6 +77,63 @@ export const Header: React.FC<HeaderProps> = ({
           title={isWideMode ? '切换为手机尺寸视图' : '切换为宽屏视图'}
         >
           {isWideMode ? <Smartphone size={18} /> : <Monitor size={18} />}
+        </button>
+
+        {/* Private Cloud / Dual-Mode Sync Button */}
+        <button
+          className="icon-btn"
+          onClick={onOpenCloudModal}
+          title={
+            syncStatus?.state === 'online'
+              ? `已连接小主机 (${syncStatus.pingMs ? syncStatus.pingMs + 'ms' : '在线'})`
+              : syncStatus?.state === 'syncing'
+              ? '正在与小主机同步中...'
+              : syncStatus?.state === 'offline_pending'
+              ? '小主机暂未连通 (离线暂存模式)'
+              : '私有云与双模存储设置'
+          }
+          style={{
+            position: 'relative',
+            color:
+              syncStatus?.state === 'online'
+                ? 'var(--accent-primary)'
+                : syncStatus?.state === 'syncing'
+                ? 'var(--accent-cyan)'
+                : syncStatus?.state === 'offline_pending'
+                ? 'var(--accent-warning)'
+                : 'var(--text-muted)',
+          }}
+        >
+          {syncStatus?.state === 'syncing' ? (
+            <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : (
+            <Cloud size={18} />
+          )}
+
+          {/* Status dot indicator */}
+          {syncStatus?.state && syncStatus.state !== 'local' && (
+            <span
+              style={{
+                position: 'absolute',
+                top: '5px',
+                right: '5px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor:
+                  syncStatus.state === 'online'
+                    ? 'var(--accent-primary)'
+                    : syncStatus.state === 'syncing'
+                    ? 'var(--accent-cyan)'
+                    : 'var(--accent-warning)',
+                boxShadow: `0 0 6px ${
+                  syncStatus.state === 'online'
+                    ? 'var(--accent-primary)'
+                    : 'var(--accent-warning)'
+                }`,
+              }}
+            />
+          )}
         </button>
 
         {/* Data Persistence & Backup modal trigger */}
