@@ -10,7 +10,7 @@ import { WorkoutLogger } from './components/WorkoutLogger';
 import { WorkoutHistory } from './components/WorkoutHistory';
 import { AnalyticsView } from './components/AnalyticsView';
 import { ExerciseLibrary } from './components/ExerciseLibrary';
-import { ProfileView } from './components/ProfileView';
+import { ProfileView, type ProfileSubPage } from './components/ProfileView';
 import { RestTimer } from './components/RestTimer';
 import { DataBackupModal } from './components/DataBackupModal';
 import { TechDocsModal } from './components/TechDocsModal';
@@ -39,6 +39,7 @@ export function App() {
   const [exerciseToAdd, setExerciseToAdd] = useState<Exercise | null>(null);
 
   const [isWideMode, setIsWideMode] = useState<boolean>(false);
+  const [profileSubPage, setProfileSubPage] = useState<ProfileSubPage | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [isTechDocsModalOpen, setIsTechDocsModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
@@ -215,8 +216,14 @@ export function App() {
           hasUpdate={Boolean(
             updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
           )}
-          onNavigateToProfile={() => setActiveTab('profile')}
-          onOpenCloudModal={() => setIsCloudModalOpen(true)}
+          onNavigateToProfile={() => {
+            setActiveTab('profile');
+            setProfileSubPage(null);
+          }}
+          onOpenCloudModal={() => {
+            setActiveTab('profile');
+            setProfileSubPage('cloud');
+          }}
         />
 
         {/* Main Body Content */}
@@ -262,7 +269,10 @@ export function App() {
                   workouts={workouts}
                   customExercises={customExercises}
                   bodyMetrics={bodyMetrics}
-                  onOpenBodyMetricsModal={() => setIsBodyMetricsModalOpen(true)}
+                  onOpenBodyMetricsModal={() => {
+                    setActiveTab('profile');
+                    setProfileSubPage('metrics');
+                  }}
                 />
               )}
 
@@ -291,22 +301,17 @@ export function App() {
                   themeState={themeState}
                   isWideMode={isWideMode}
                   onToggleWideMode={() => setIsWideMode(!isWideMode)}
-                  onOpenBackupModal={() => setIsBackupModalOpen(true)}
-                  onOpenCloudModal={() => setIsCloudModalOpen(true)}
-                  onOpenThemeModal={() => setIsThemeModalOpen(true)}
-                  onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
-                  onOpenUpdateModal={() => {
-                    setIsUpdateModalOpen(true);
-                    if (!updateData || updateData.error) {
-                      handleCheckUpdate(true);
-                    }
-                  }}
-                  onOpenBodyMetricsModal={() => setIsBodyMetricsModalOpen(true)}
+                  onDataChanged={loadData}
+                  onSaveBodyMetric={handleSaveBodyMetric}
+                  onDeleteBodyMetric={handleDeleteBodyMetric}
                   hasUpdate={Boolean(
                     updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
                   )}
                   updateData={updateData}
+                  isCheckingUpdate={isCheckingUpdate}
                   onCheckUpdate={() => handleCheckUpdate(true)}
+                  initialSubPage={profileSubPage}
+                  onSubPageChange={setProfileSubPage}
                 />
               )}
             </>
@@ -336,7 +341,12 @@ export function App() {
         {/* Bottom Tab Navigation */}
         <Navbar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            if (tab !== 'profile') {
+              setProfileSubPage(null);
+            }
+          }}
           hasUpdate={Boolean(
             updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
           )}

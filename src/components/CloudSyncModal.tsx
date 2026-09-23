@@ -20,15 +20,17 @@ import { cloudSyncService } from '../services/cloudSyncService';
 import type { CloudConfig, SyncStatusInfo } from '../types/cloud';
 
 interface CloudSyncModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
   onDataChanged: () => void;
+  isSubPage?: boolean;
 }
 
 export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
-  isOpen,
+  isOpen = true,
   onClose,
   onDataChanged,
+  isSubPage = false,
 }) => {
   const [config, setConfig] = useState<CloudConfig>(cloudAuthService.getConfig());
   const [syncStatus, setSyncStatus] = useState<SyncStatusInfo>(cloudSyncService.getStatus());
@@ -54,7 +56,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
   };
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isSubPage && !isOpen) return;
 
     // Refresh states when modal opens
     const currentCfg = cloudAuthService.getConfig();
@@ -71,9 +73,9 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
     }
 
     return () => unsubscribe();
-  }, [isOpen]);
+  }, [isOpen, isSubPage]);
 
-  if (!isOpen) return null;
+  if (!isSubPage && !isOpen) return null;
 
   // Test Ping
   const handleTestPing = async () => {
@@ -182,29 +184,10 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
 
   const isConnected = config.mode === 'cloud_sync' && Boolean(config.token);
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '520px' }}
-      >
-        {/* Modal Header */}
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Server size={20} color="var(--accent-cyan)" />
-            <h3 className="modal-title">私有云与双模存储</h3>
-          </div>
-          <button className="icon-btn" style={{ width: '32px', height: '32px' }} onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Modal Scrollable Body */}
-        <div className="modal-body smooth-scroll" style={{ paddingRight: '4px' }}>
-
-        {/* Feedback Alert */}
-        {feedback && (
+  const renderBody = () => (
+    <>
+      {/* Feedback Alert */}
+      {feedback && (
           <div
             style={{
               padding: '10px 14px',
@@ -623,6 +606,36 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
             </form>
           </div>
         )}
+    </>
+  );
+
+  if (isSubPage) {
+    return (
+      <div className="subpage-body-container animate-fade-in" style={{ padding: '4px 0 24px' }}>
+        {renderBody()}
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: '520px' }}
+      >
+        <div className="modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Server size={20} color="var(--accent-cyan)" />
+            <h3 className="modal-title">私有云与双模存储</h3>
+          </div>
+          <button className="icon-btn" style={{ width: '32px', height: '32px' }} onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="modal-body smooth-scroll" style={{ paddingRight: '4px' }}>
+          {renderBody()}
         </div>
       </div>
     </div>

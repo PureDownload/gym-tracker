@@ -4,13 +4,18 @@ import { PRESET_THEMES, type ThemeId, type ThemeState } from '../types/theme';
 import { themeService } from '../services/themeService';
 
 interface ThemeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  isSubPage?: boolean;
 }
 
 type FilterCategory = 'all' | 'dark' | 'light';
 
-export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
+export const ThemeModal: React.FC<ThemeModalProps> = ({
+  isOpen = true,
+  onClose,
+  isSubPage = false,
+}) => {
   const [themeState, setThemeState] = useState<ThemeState>(themeService.getState());
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
 
@@ -20,7 +25,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
     return () => unsubscribe();
   }, []);
 
-  if (!isOpen) return null;
+  if (!isSubPage && !isOpen) return null;
 
   const handleToggleAutoMode = () => {
     if (themeState.mode === 'auto') {
@@ -39,6 +44,158 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
     if (filterCategory === 'light') return !t.isDark;
     return true;
   });
+
+  const renderContent = () => (
+    <div className="theme-modal-container">
+      {/* 1. 跟随系统颜色卡片 */}
+      <div className="theme-system-box">
+        <div className="theme-system-info">
+          <div className="theme-system-title">
+            <Monitor size={17} style={{ color: 'var(--accent-cyan)' }} />
+            <span>跟随系统颜色</span>
+            <span className="theme-system-badge">
+              {themeState.systemColorScheme === 'dark' ? (
+                <>
+                  <Moon size={11} /> 当前系统偏好: 深色
+                </>
+              ) : (
+                <>
+                  <Sun size={11} /> 当前系统偏好: 浅色
+                </>
+              )}
+            </span>
+          </div>
+          <div className="theme-system-desc">
+            <span>根据系统深浅色偏好自动切换</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+              {themeState.systemColorScheme === 'dark' ? '「暗夜极客」' : '「纯净晨曦」'}
+            </span>
+          </div>
+        </div>
+
+        {/* Toggle switch */}
+        <div
+          className={`theme-switch ${themeState.mode === 'auto' ? 'active' : ''}`}
+          onClick={handleToggleAutoMode}
+          title={themeState.mode === 'auto' ? '点击切换为自主选择模式' : '点击开启跟随系统'}
+        >
+          <div className="theme-switch-knob" />
+        </div>
+      </div>
+
+      {/* 2. 分类标签栏 */}
+      <div className="theme-filter-tabs">
+        <div
+          className={`theme-filter-tab ${filterCategory === 'all' ? 'active' : ''}`}
+          onClick={() => setFilterCategory('all')}
+        >
+          全部皮肤 ({PRESET_THEMES.length})
+        </div>
+        <div
+          className={`theme-filter-tab ${filterCategory === 'dark' ? 'active' : ''}`}
+          onClick={() => setFilterCategory('dark')}
+        >
+          🌙 深色系 (4)
+        </div>
+        <div
+          className={`theme-filter-tab ${filterCategory === 'light' ? 'active' : ''}`}
+          onClick={() => setFilterCategory('light')}
+        >
+          ☀️ 浅色系 (3)
+        </div>
+      </div>
+
+      {/* 3. 皮肤主题卡片列表 */}
+      <div className="theme-grid">
+        {filteredThemes.map((theme) => {
+          const isActive = themeState.themeId === theme.id;
+          return (
+            <div
+              key={theme.id}
+              className={`theme-card ${isActive ? 'active' : ''}`}
+              onClick={() => handleSelectTheme(theme.id)}
+            >
+              {/* Active Checkmark Pill */}
+              {isActive && (
+                <div className="theme-card-active-pill">
+                  <Check size={11} strokeWidth={3} />
+                  <span>{themeState.mode === 'auto' ? '系统匹配' : '已选用'}</span>
+                </div>
+              )}
+
+              {/* Card Header */}
+              <div className="theme-card-header">
+                <div className="theme-card-title-group">
+                  <span className="theme-card-name">{theme.name}</span>
+                  <span className="theme-card-en">{theme.enName}</span>
+                </div>
+                <span className="theme-card-mode-badge">
+                  {theme.isDark ? <Moon size={11} /> : <Sun size={11} />}
+                  <span>{theme.isDark ? '深色' : '浅色'}</span>
+                </span>
+              </div>
+
+              {/* Palette Swatch Preview */}
+              <div className="theme-palette-preview">
+                <div
+                  className="theme-swatch-circle"
+                  style={{ backgroundColor: theme.colors.bg }}
+                  title={`背景色: ${theme.colors.bg}`}
+                />
+                <div
+                  className="theme-swatch-circle"
+                  style={{ backgroundColor: theme.colors.card }}
+                  title={`卡片底色: ${theme.colors.card}`}
+                />
+                <div
+                  className="theme-preview-gradient"
+                  style={{ background: theme.previewGradient }}
+                  title="核心强调渐变"
+                />
+                <div
+                  className="theme-swatch-circle"
+                  style={{ backgroundColor: theme.colors.accent }}
+                  title={`强调点缀色: ${theme.colors.accent}`}
+                />
+                <div
+                  className="theme-swatch-circle"
+                  style={{ backgroundColor: theme.colors.text }}
+                  title={`主文本色: ${theme.colors.text}`}
+                />
+              </div>
+
+              {/* Description */}
+              <div className="theme-card-desc">{theme.description}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Bottom Tip */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.72rem',
+          color: 'var(--text-muted)',
+          padding: '6px 4px',
+          justifyContent: 'center',
+        }}
+      >
+        <Sparkles size={13} style={{ color: 'var(--accent-primary)' }} />
+        <span>所有皮肤设置均自动持久化保存，并在多端设备上无缝同步响应</span>
+      </div>
+    </div>
+  );
+
+  if (isSubPage) {
+    return (
+      <div className="subpage-body-container animate-fade-in" style={{ padding: '4px 0 24px' }}>
+        {renderContent()}
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 110 }}>
@@ -90,147 +247,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ isOpen, onClose }) => {
 
         {/* Modal Body */}
         <div className="modal-body" style={{ marginTop: '14px' }}>
-          <div className="theme-modal-container">
-            {/* 1. 跟随系统颜色卡片 */}
-            <div className="theme-system-box">
-              <div className="theme-system-info">
-                <div className="theme-system-title">
-                  <Monitor size={17} style={{ color: 'var(--accent-cyan)' }} />
-                  <span>跟随系统颜色</span>
-                  <span className="theme-system-badge">
-                    {themeState.systemColorScheme === 'dark' ? (
-                      <>
-                        <Moon size={11} /> 当前系统偏好: 深色
-                      </>
-                    ) : (
-                      <>
-                        <Sun size={11} /> 当前系统偏好: 浅色
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div className="theme-system-desc">
-                  <span>根据系统深浅色偏好自动切换</span>
-                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                    {themeState.systemColorScheme === 'dark' ? '「暗夜极客」' : '「纯净晨曦」'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Toggle switch */}
-              <div
-                className={`theme-switch ${themeState.mode === 'auto' ? 'active' : ''}`}
-                onClick={handleToggleAutoMode}
-                title={themeState.mode === 'auto' ? '点击切换为自主选择模式' : '点击开启跟随系统'}
-              >
-                <div className="theme-switch-knob" />
-              </div>
-            </div>
-
-            {/* 2. 分类标签栏 */}
-            <div className="theme-filter-tabs">
-              <div
-                className={`theme-filter-tab ${filterCategory === 'all' ? 'active' : ''}`}
-                onClick={() => setFilterCategory('all')}
-              >
-                全部皮肤 ({PRESET_THEMES.length})
-              </div>
-              <div
-                className={`theme-filter-tab ${filterCategory === 'dark' ? 'active' : ''}`}
-                onClick={() => setFilterCategory('dark')}
-              >
-                🌙 深色系 (4)
-              </div>
-              <div
-                className={`theme-filter-tab ${filterCategory === 'light' ? 'active' : ''}`}
-                onClick={() => setFilterCategory('light')}
-              >
-                ☀️ 浅色系 (3)
-              </div>
-            </div>
-
-            {/* 3. 皮肤主题卡片列表 */}
-            <div className="theme-grid">
-              {filteredThemes.map((theme) => {
-                const isActive = themeState.themeId === theme.id;
-                return (
-                  <div
-                    key={theme.id}
-                    className={`theme-card ${isActive ? 'active' : ''}`}
-                    onClick={() => handleSelectTheme(theme.id)}
-                  >
-                    {/* Active Checkmark Pill */}
-                    {isActive && (
-                      <div className="theme-card-active-pill">
-                        <Check size={11} strokeWidth={3} />
-                        <span>{themeState.mode === 'auto' ? '系统匹配' : '已选用'}</span>
-                      </div>
-                    )}
-
-                    {/* Card Header */}
-                    <div className="theme-card-header">
-                      <div className="theme-card-title-group">
-                        <span className="theme-card-name">{theme.name}</span>
-                        <span className="theme-card-en">{theme.enName}</span>
-                      </div>
-                      <span className="theme-card-mode-badge">
-                        {theme.isDark ? <Moon size={11} /> : <Sun size={11} />}
-                        <span>{theme.isDark ? '深色' : '浅色'}</span>
-                      </span>
-                    </div>
-
-                    {/* Palette Swatch Preview */}
-                    <div className="theme-palette-preview">
-                      <div
-                        className="theme-swatch-circle"
-                        style={{ backgroundColor: theme.colors.bg }}
-                        title={`背景色: ${theme.colors.bg}`}
-                      />
-                      <div
-                        className="theme-swatch-circle"
-                        style={{ backgroundColor: theme.colors.card }}
-                        title={`卡片底色: ${theme.colors.card}`}
-                      />
-                      <div
-                        className="theme-preview-gradient"
-                        style={{ background: theme.previewGradient }}
-                        title="核心强调渐变"
-                      />
-                      <div
-                        className="theme-swatch-circle"
-                        style={{ backgroundColor: theme.colors.accent }}
-                        title={`强调点缀色: ${theme.colors.accent}`}
-                      />
-                      <div
-                        className="theme-swatch-circle"
-                        style={{ backgroundColor: theme.colors.text }}
-                        title={`主文本色: ${theme.colors.text}`}
-                      />
-                    </div>
-
-                    {/* Description */}
-                    <div className="theme-card-desc">{theme.description}</div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Bottom Tip */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.72rem',
-                color: 'var(--text-muted)',
-                padding: '6px 4px',
-                justifyContent: 'center',
-              }}
-            >
-              <Sparkles size={13} style={{ color: 'var(--accent-primary)' }} />
-              <span>所有皮肤设置均自动持久化保存，并在多端设备上无缝同步响应</span>
-            </div>
-          </div>
+          {renderContent()}
         </div>
       </div>
     </div>
