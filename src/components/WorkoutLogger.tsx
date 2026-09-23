@@ -17,6 +17,11 @@ import {
   X,
   Trophy,
   Dumbbell,
+  Layers,
+  Flame,
+  ArrowRightLeft,
+  Share2,
+  MoreHorizontal,
 } from 'lucide-react';
 import type {
   MuscleGroup,
@@ -26,13 +31,21 @@ import type {
   WorkoutSet,
   WorkoutSession,
   SetType,
+  WorkoutTemplate,
 } from '../types/workout';
 import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS } from '../data/presetExercises';
+import { WarmupCalculatorModal } from './WarmupCalculatorModal';
+import { WorkoutPosterModal } from './WorkoutPosterModal';
+import { TemplateManagerModal } from './TemplateManagerModal';
+import { ExerciseSubstituteModal } from './ExerciseSubstituteModal';
 
 interface WorkoutLoggerProps {
   customExercises: Exercise[];
   workouts: WorkoutSession[];
   pinnedExerciseIds: string[];
+  templates?: WorkoutTemplate[];
+  onSaveTemplate?: (template: WorkoutTemplate) => void;
+  onDeleteTemplate?: (id: string) => void;
   workoutToCopy?: WorkoutSession | null;
   onClearWorkoutToCopy?: () => void;
   exerciseToAdd?: Exercise | null;
@@ -142,6 +155,9 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   customExercises,
   workouts,
   pinnedExerciseIds,
+  templates = [],
+  onSaveTemplate,
+  onDeleteTemplate,
   workoutToCopy,
   onClearWorkoutToCopy,
   exerciseToAdd,
@@ -169,6 +185,35 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   const [isTimeEditModalOpen, setIsTimeEditModalOpen] = useState<boolean>(false);
   const [manualMinutesInput, setManualMinutesInput] = useState<string>('');
 
+  // 3. New Advanced Modal States (Templates, Warmup, Substitute, Story Poster)
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [isPosterModalOpen, setIsPosterModalOpen] = useState<boolean>(false);
+  const [lastSavedSession, setLastSavedSession] = useState<WorkoutSession | null>(null);
+  const [warmupTargetEx, setWarmupTargetEx] = useState<{
+    exIdx: number;
+    name: string;
+    weight: number;
+  } | null>(null);
+  const [substituteTargetEx, setSubstituteTargetEx] = useState<{
+    exIdx: number;
+    name: string;
+    category: string;
+  } | null>(null);
+  const [activeMoreMenuExId, setActiveMoreMenuExId] = useState<string | null>(null);
+
+  // Sticky HUD compact state when scrolling
+  const [isHudCompact, setIsHudCompact] = useState<boolean>(false);
+
+  useEffect(() => {
+    const mainEl = document.querySelector('.main-content');
+    if (!mainEl) return;
+    const handleScroll = () => {
+      setIsHudCompact(mainEl.scrollTop > 25);
+    };
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     let interval: any = null;
     if (isTimerRunning) {
@@ -188,6 +233,106 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       return `${h}h ${remM.toString().padStart(2, '0')}m`;
     }
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Template & Substitute helper functions
+  const handleApplyTemplate = (tmpl: WorkoutTemplate) => {
+    setWorkoutTitle(tmpl.name);
+    const newExercises: WorkoutExercise[] = tmpl.exercises.map((te, exIdx) => ({
+      id: `tmpl_ex_${Date.now()}_${exIdx}`,
+      exerciseId: te.exerciseId,
+      exerciseName: te.exerciseName,
+      category: te.category,
+      isCardio: te.isCardio,
+      notes: te.notes,
+      sets: te.defaultSets.map((ds, sIdx) => ({
+        id: `tmpl_set_${Date.now()}_${exIdx}_${sIdx}`,
+        setNumber: ds.setNumber || sIdx + 1,
+        weightKg: ds.weightKg || 0,
+        reps: ds.reps || 0,
+        type: ds.type || 'normal',
+        rpe: ds.rpe,
+        durationMinutes: ds.durationMinutes,
+        distanceKm: ds.distanceKm,
+        isCompleted: false,
+      })),
+    }));
+    setActiveExercises(newExercises);
+    setSavedSuccessMsg(`已成功套用「${tmpl.name}」模版！`);
+    setTimeout(() => setSavedSuccessMsg(''), 2500);
+  };
+
+  const handleSaveCurrentAsTemplate = () => {
+    const defaultName = workoutTitle || '我的训练模版';
+    const templateName = window.prompt('请输入新模版名称：', defaultName);
+    if (!templateName || !templateName.trim()) return;
+
+    const newTemplate: WorkoutTemplate = {
+      id: `custom_tmpl_${Date.now()}`,
+      name: templateName.trim(),
+      category: 'custom',
+      description: `包含 ${activeExercises.length} 个动作的个性化方案`,
+      exercises: activeExercises.map((ex) => ({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        category: ex.category,
+        isCardio: ex.isCardio,
+        notes: ex.notes,
+        defaultSets: ex.sets.map((s) => ({
+          setNumber: s.setNumber,
+          weightKg: s.weightKg,
+          reps: s.reps,
+          type: s.type,
+          rpe: s.rpe,
+          durationMinutes: s.durationMinutes,
+          distanceKm: s.distanceKm,
+        })),
+      })),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    if (onSaveTemplate) {
+      onSaveTemplate(newTemplate);
+      setSavedSuccessMsg(`成功保存新模版「${newTemplate.name}」！`);
+      setTimeout(() => setSavedSuccessMsg(''), 2500);
+    }
+  };
+
+  const handleSubstituteExercise = (newEx: Exercise) => {
+    if (!substituteTargetEx) return;
+    const { exIdx } = substituteTargetEx;
+    const updated = [...activeExercises];
+    const target = updated[exIdx];
+    if (!target) return;
+
+    target.exerciseId = newEx.id;
+    target.exerciseName = newEx.name;
+    target.category = newEx.category;
+    target.isCardio = newEx.isCardio || newEx.category === 'cardio';
+
+    setActiveExercises(updated);
+    setSavedSuccessMsg(`已将动作替换为「${newEx.name}」！`);
+    setTimeout(() => setSavedSuccessMsg(''), 2500);
+    setSubstituteTargetEx(null);
+  };
+
+  const handleApplyWarmupSets = (warmupSets: WorkoutSet[]) => {
+    if (!warmupTargetEx) return;
+    const { exIdx } = warmupTargetEx;
+    const updated = [...activeExercises];
+    const target = updated[exIdx];
+    if (!target) return;
+
+    const existingNormalSets = target.sets.filter((s) => s.type !== 'warmup');
+    const combined = [...warmupSets, ...existingNormalSets];
+    combined.forEach((s, idx) => (s.setNumber = idx + 1));
+    target.sets = combined;
+
+    setActiveExercises(updated);
+    setSavedSuccessMsg(`已为「${target.exerciseName}」配置 ${warmupSets.length} 个阶梯热身组！`);
+    setTimeout(() => setSavedSuccessMsg(''), 2500);
+    setWarmupTargetEx(null);
   };
 
   // 3. Current active exercises
@@ -578,6 +723,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     };
 
     onSaveWorkout(newSession);
+    setLastSavedSession(newSession);
 
     // Trigger celebration summary modal
     setCelebrationData({
@@ -615,7 +761,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       {/* ========================================================
           1. IMMERSIVE WORKOUT HUD DASHBOARD (实时训练抬头看板)
           ======================================================== */}
-      <div className="workout-hud-card">
+      <div className={`workout-hud-card ${isHudCompact ? 'compact' : ''}`}>
         <div className="hud-grid">
           {/* Time elapsed */}
           <div
@@ -726,6 +872,45 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
           </div>
         </div>
 
+        {/* Template Quick Launcher Bar */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              padding: '6px 10px',
+              fontSize: '0.76rem',
+              color: 'var(--accent-primary)',
+              borderColor: 'var(--accent-primary)',
+              background: 'rgba(59, 130, 246, 0.05)',
+            }}
+            onClick={() => setIsTemplateModalOpen(true)}
+          >
+            <Layers size={14} />
+            <span>训练计划模版库 ({templates.length}套)</span>
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '6px 10px',
+              fontSize: '0.74rem',
+            }}
+            onClick={handleSaveCurrentAsTemplate}
+            title="将当前动作另存为模版"
+          >
+            <span>💾 存为模版</span>
+          </button>
+        </div>
+
         {/* Quick Title Tags */}
         <div className="category-scroll-container" style={{ paddingBottom: '4px' }}>
           {QUICK_TITLES.map((t) => (
@@ -822,67 +1007,128 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons: Tips, Plate Calc, Pin, Delete */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {/* 💡 Beginner Tips Button */}
-                <button
-                  type="button"
-                  className="icon-btn"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    color: isTipsOpen ? 'var(--accent-warning)' : 'var(--text-secondary)',
-                    backgroundColor: isTipsOpen ? 'rgba(245, 158, 11, 0.15)' : undefined,
-                  }}
-                  onClick={() => setOpenTipsExId(isTipsOpen ? null : exerciseEntry.id)}
-                  title="查看新手动作要领与避坑锦囊"
-                >
-                  <Lightbulb size={16} />
-                </button>
-
-                {/* 🏋️ Plate Calculator Button (if Barbell exercise) */}
-                {currentExerciseObj?.equipment === 'barbell' && (
+              {/* Action Buttons: Primary (Warmup, Substitute) + More Menu (Plate calc, Tips, Pin, Delete) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', position: 'relative' }}>
+                {/* 🔥 Warm-up Sets Ladder Calculator */}
+                {!isCardio && (
                   <button
                     type="button"
                     className="icon-btn"
-                    style={{ width: '32px', height: '32px', color: 'var(--accent-primary)' }}
+                    style={{ width: '32px', height: '32px', color: '#f59e0b' }}
                     onClick={() => {
-                      const firstSetWeight = exerciseEntry.sets[0]?.weightKg || 40;
-                      setPlateCalcWeight(firstSetWeight);
+                      const firstSetWeight =
+                        exerciseEntry.sets.find((s) => s.type !== 'warmup')?.weightKg ||
+                        exerciseEntry.sets[0]?.weightKg ||
+                        80;
+                      setWarmupTargetEx({
+                        exIdx,
+                        name: exerciseEntry.exerciseName,
+                        weight: firstSetWeight,
+                      });
                     }}
-                    title="打开杠铃算片器 (配重图解)"
+                    title="计算科学阶梯热身组方案"
                   >
-                    <Calculator size={16} />
+                    <Flame size={16} />
                   </button>
                 )}
 
-                {/* Pin Button */}
+                {/* 🔁 Exercise Substitute Button */}
                 <button
                   type="button"
                   className="icon-btn"
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    color: isPinned ? 'var(--accent-warning)' : 'var(--text-muted)',
+                  style={{ width: '32px', height: '32px', color: '#10b981' }}
+                  onClick={() => {
+                    setSubstituteTargetEx({
+                      exIdx,
+                      name: exerciseEntry.exerciseName,
+                      category: exerciseEntry.category,
+                    });
                   }}
-                  onClick={() => onTogglePinExercise(exerciseEntry.exerciseId)}
-                  title={isPinned ? '取消置顶' : '置顶此动作'}
+                  title="器械被占？换个同肌群备选动作"
                 >
-                  <Pin size={15} />
+                  <ArrowRightLeft size={16} />
                 </button>
 
-                {/* Delete Exercise */}
-                {activeExercises.length > 1 && (
+                {/* ··· More Actions Menu Trigger */}
+                <div style={{ position: 'relative' }}>
                   <button
                     type="button"
-                    className="icon-btn"
-                    style={{ width: '32px', height: '32px', color: 'var(--accent-danger)' }}
-                    onClick={() => handleRemoveExercise(exIdx)}
-                    title="移除此动作"
+                    className={`icon-btn ${activeMoreMenuExId === exerciseEntry.id ? 'active' : ''}`}
+                    style={{ width: '32px', height: '32px', color: 'var(--text-secondary)' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMoreMenuExId(activeMoreMenuExId === exerciseEntry.id ? null : exerciseEntry.id);
+                    }}
+                    title="更多动作操作 (杠铃算片、动作要领、置顶、删除)"
                   >
-                    <Trash2 size={15} />
+                    <MoreHorizontal size={16} />
                   </button>
-                )}
+
+                  {/* Dropdown Menu */}
+                  {activeMoreMenuExId === exerciseEntry.id && (
+                    <div
+                      className="exercise-more-dropdown animate-scale-in"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Plate Calculator */}
+                      {currentExerciseObj?.equipment === 'barbell' && (
+                        <button
+                          type="button"
+                          className="exercise-dropdown-item"
+                          onClick={() => {
+                            const firstSetWeight = exerciseEntry.sets[0]?.weightKg || 40;
+                            setPlateCalcWeight(firstSetWeight);
+                            setActiveMoreMenuExId(null);
+                          }}
+                        >
+                          <Calculator size={15} color="var(--accent-primary)" />
+                          <span>杠铃算片器 (配重)</span>
+                        </button>
+                      )}
+
+                      {/* Tips */}
+                      <button
+                        type="button"
+                        className="exercise-dropdown-item"
+                        onClick={() => {
+                          setOpenTipsExId(isTipsOpen ? null : exerciseEntry.id);
+                          setActiveMoreMenuExId(null);
+                        }}
+                      >
+                        <Lightbulb size={15} color="#f59e0b" />
+                        <span>{isTipsOpen ? '收起动作要领' : '动作要领与指导'}</span>
+                      </button>
+
+                      {/* Pin */}
+                      <button
+                        type="button"
+                        className="exercise-dropdown-item"
+                        onClick={() => {
+                          onTogglePinExercise(exerciseEntry.exerciseId);
+                          setActiveMoreMenuExId(null);
+                        }}
+                      >
+                        <Pin size={15} color={isPinned ? 'var(--accent-warning)' : 'var(--text-muted)'} />
+                        <span>{isPinned ? '取消置顶动作' : '置顶此动作'}</span>
+                      </button>
+
+                      {/* Delete */}
+                      {activeExercises.length > 1 && (
+                        <button
+                          type="button"
+                          className="exercise-dropdown-item danger"
+                          onClick={() => {
+                            handleRemoveExercise(exIdx);
+                            setActiveMoreMenuExId(null);
+                          }}
+                        >
+                          <Trash2 size={15} color="var(--accent-danger)" />
+                          <span>移除此训练动作</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -925,6 +1171,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             {/* Previous Session Performance Reference */}
             {lastSets && lastSets.length > 0 && (
               <div
+                className="hide-scrollbar"
                 style={{
                   fontSize: '0.74rem',
                   color: 'var(--text-secondary)',
@@ -937,6 +1184,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                   alignItems: 'center',
                   gap: '6px',
                   overflowX: 'auto',
+                  overscrollBehaviorX: 'contain',
                 }}
               >
                 <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>📌 上次参考:</span>
@@ -1001,18 +1249,69 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                         )}
                       </div>
 
-                      {/* Previous Session Hint */}
-                      <div className="col-prev">
+                      {/* Previous Session Hint with Interactive Ghost Fill & Overload */}
+                      <div className="col-prev" onClick={(e) => e.stopPropagation()}>
                         {isCardio ? (
                           prevSet ? (
-                            `${prevSet.durationMinutes || 0}分 ${prevSet.distanceKm ? prevSet.distanceKm + 'k' : ''}`
+                            <button
+                              type="button"
+                              className="ghost-fill-chip"
+                              title="点击一键填入上次数据"
+                              onClick={() => {
+                                handleUpdateSet(
+                                  exIdx,
+                                  setIdx,
+                                  'durationMinutes',
+                                  prevSet.durationMinutes || 0
+                                );
+                                if (prevSet.distanceKm) {
+                                  handleUpdateSet(
+                                    exIdx,
+                                    setIdx,
+                                    'distanceKm',
+                                    prevSet.distanceKm
+                                  );
+                                }
+                              }}
+                            >
+                              {prevSet.durationMinutes || 0}分{' '}
+                              {prevSet.distanceKm ? `${prevSet.distanceKm}k` : ''}
+                            </button>
                           ) : (
-                            '-'
+                            <span style={{ color: 'var(--text-muted)' }}>-</span>
                           )
-                        ) : prevSet ? (
-                          `${prevSet.weightKg}kg × ${prevSet.reps}`
+                        ) : prevSet && prevSet.weightKg > 0 ? (
+                          <div className="ghost-set-wrapper">
+                            <button
+                              type="button"
+                              className="ghost-fill-chip"
+                              title="点击一键填入上次数据"
+                              onClick={() => {
+                                handleUpdateSet(exIdx, setIdx, 'weightKg', prevSet.weightKg);
+                                handleUpdateSet(exIdx, setIdx, 'reps', prevSet.reps);
+                              }}
+                            >
+                              {prevSet.weightKg}kg×{prevSet.reps}
+                            </button>
+                            <button
+                              type="button"
+                              className="ghost-overload-chip"
+                              title="上次重量 +2.5kg 渐进超负荷"
+                              onClick={() => {
+                                handleUpdateSet(
+                                  exIdx,
+                                  setIdx,
+                                  'weightKg',
+                                  (prevSet.weightKg || 0) + 2.5
+                                );
+                                handleUpdateSet(exIdx, setIdx, 'reps', prevSet.reps);
+                              }}
+                            >
+                              +2.5
+                            </button>
+                          </div>
                         ) : (
-                          '-'
+                          <span style={{ color: 'var(--text-muted)' }}>-</span>
                         )}
                       </div>
 
@@ -1611,10 +1910,38 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
               {MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]}
             </div>
 
+            {lastSavedSession && (
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{
+                  width: '100%',
+                  marginTop: '12px',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  borderColor: 'var(--accent-warning)',
+                  color: 'var(--accent-warning)',
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                }}
+                onClick={() => {
+                  setCelebrationData(null);
+                  setIsPosterModalOpen(true);
+                }}
+              >
+                <Share2 size={18} />
+                <span>📸 生成高颜值打卡海报 (存图发圈)</span>
+              </button>
+            )}
+
             <button
               type="button"
               className="btn-primary"
-              style={{ width: '100%', marginTop: '18px', padding: '12px' }}
+              style={{ width: '100%', marginTop: '10px', padding: '12px' }}
               onClick={() => setCelebrationData(null)}
             >
               太棒了，完成记录！
@@ -1712,7 +2039,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             </div>
 
             {/* Exercise List */}
-            <div className="modal-body">
+            <div className="modal-body smooth-scroll">
               <div
                 style={{
                   fontSize: '0.74rem',
@@ -1851,6 +2178,49 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================
+          8. NEW MODALS: WARMUP, SUBSTITUTE, TEMPLATES, POSTER
+          ======================================================== */}
+      {warmupTargetEx && (
+        <WarmupCalculatorModal
+          isOpen={true}
+          exerciseName={warmupTargetEx.name}
+          initialWeight={warmupTargetEx.weight}
+          onClose={() => setWarmupTargetEx(null)}
+          onApplyWarmupSets={handleApplyWarmupSets}
+        />
+      )}
+
+      {substituteTargetEx && (
+        <ExerciseSubstituteModal
+          isOpen={true}
+          currentExerciseName={substituteTargetEx.name}
+          category={substituteTargetEx.category}
+          allExercises={allExercises}
+          onClose={() => setSubstituteTargetEx(null)}
+          onSubstitute={handleSubstituteExercise}
+        />
+      )}
+
+      <TemplateManagerModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        templates={templates}
+        onApplyTemplate={handleApplyTemplate}
+        onDeleteTemplate={(id) => {
+          if (onDeleteTemplate) onDeleteTemplate(id);
+        }}
+        onSaveCurrentAsTemplate={handleSaveCurrentAsTemplate}
+      />
+
+      {lastSavedSession && (
+        <WorkoutPosterModal
+          isOpen={isPosterModalOpen}
+          onClose={() => setIsPosterModalOpen(false)}
+          workout={lastSavedSession}
+        />
       )}
     </div>
   );

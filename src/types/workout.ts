@@ -97,3 +97,88 @@ export interface OverloadAnalysis {
   targetNextWeight: number;
   historyPoints: ExerciseHistoryPoint[];
 }
+
+// -------------------------------------------------------------
+// Workout Template / Routine Types (训练模版计划)
+// -------------------------------------------------------------
+export interface TemplateExercise {
+  exerciseId: string;
+  exerciseName: string;
+  category: MuscleGroup;
+  isCardio?: boolean;
+  defaultSets: Array<{
+    setNumber: number;
+    weightKg?: number;
+    reps?: number;
+    type: SetType;
+    rpe?: number;
+    durationMinutes?: number;
+    distanceKm?: number;
+  }>;
+  notes?: string;
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  category: string; // 'ppl' | 'upper_lower' | 'arnold' | 'fullbody' | 'custom'
+  description?: string;
+  exercises: TemplateExercise[];
+  createdAt: number;
+  updatedAt: number;
+  isPreset?: boolean;
+}
+
+// -------------------------------------------------------------
+// Body Metrics & Physique Tracking Types (身体围度与体重)
+// -------------------------------------------------------------
+export interface BodyMeasurements {
+  chestCm?: number;
+  armCm?: number;
+  waistCm?: number;
+  hipsCm?: number;
+  thighCm?: number;
+  neckCm?: number;
+  calvesCm?: number;
+}
+
+export interface BodyMetricEntry {
+  id: string;
+  date: string; // YYYY-MM-DD
+  weightKg?: number;
+  bodyFatPercent?: number;
+  measurements?: BodyMeasurements;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// -------------------------------------------------------------
+// Strength Standards & Bodyweight Ratio Types (力量等级评定)
+// -------------------------------------------------------------
+export type StrengthRank = 'novice' | 'intermediate' | 'advanced' | 'elite';
+
+export interface SingleLiftStandard {
+  exerciseKey: 'bench' | 'squat' | 'deadlift' | 'overhead_press';
+  exerciseName: string;
+  bestWeightKg: number;
+  bestEstimated1RMKg: number;
+  ratio: number; // 1RM / bodyWeight
+  rank: StrengthRank;
+  rankLabel: string;
+  rankColor: string;
+  nextRankWeightKg: number;
+  diffToNextKg: number;
+  progressPercent: number; // 0 - 100 towards next rank
+}
+
+export interface StrengthProfile {
+  bodyWeightKg: number;
+  gender: 'male' | 'female';
+  lifts: SingleLiftStandard[];
+  totalBigThree1RMKg: number; // 卧推 + 深蹲 + 硬拉
+  totalRatio: number;
+  overallRank: StrengthRank;
+  overallRankLabel: string;
+}
+

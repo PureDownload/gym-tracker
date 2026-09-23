@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { Trash2, ChevronDown, ChevronUp, Dumbbell, Activity, Copy, Check, Flame } from 'lucide-react';
+import {
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+  Dumbbell,
+  Activity,
+  Copy,
+  Check,
+  Flame,
+  ListFilter,
+  CalendarDays,
+} from 'lucide-react';
 import type { WorkoutSession } from '../types/workout';
 import { analyticsService } from '../services/analytics';
 import { MUSCLE_GROUP_LABELS } from '../data/presetExercises';
+import { TrainingCalendar } from './TrainingCalendar';
 
 interface WorkoutHistoryProps {
   workouts: WorkoutSession[];
@@ -25,6 +37,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
   onDeleteWorkout,
   onCopyWorkoutToLogger,
 }) => {
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [expandedDateSet, setExpandedDateSet] = useState<Record<string, boolean>>({});
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
 
@@ -115,9 +128,33 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
 
   return (
     <div className="animate-fade-in">
-      {/* Top Stats Overview */}
-      <div
-        className="card"
+      {/* Top Mode Segmented Switcher */}
+      <div className="history-segmented-control" style={{ marginBottom: '12px' }}>
+        <button
+          type="button"
+          className={`history-seg-btn ${viewMode === 'list' ? 'active' : ''}`}
+          onClick={() => setViewMode('list')}
+        >
+          <ListFilter size={15} />
+          <span>训练清单</span>
+        </button>
+        <button
+          type="button"
+          className={`history-seg-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+          onClick={() => setViewMode('calendar')}
+        >
+          <CalendarDays size={15} />
+          <span>训练日历</span>
+        </button>
+      </div>
+
+      {viewMode === 'calendar' ? (
+        <TrainingCalendar workouts={workouts} onCopyWorkoutToLogger={onCopyWorkoutToLogger} />
+      ) : (
+        <>
+          {/* Top Stats Overview */}
+          <div
+            className="card"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
@@ -435,6 +472,8 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
           );
         })
       )}
+    </>
+  )}
     </div>
   );
 };

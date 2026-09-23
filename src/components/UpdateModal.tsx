@@ -78,7 +78,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ maxWidth: '520px' }}
       >
         {/* Modal Header */}
         <div
@@ -128,6 +128,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             <X size={16} />
           </button>
         </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="modal-body smooth-scroll" style={{ paddingRight: '4px' }}>
 
         {/* Version Compare Banner */}
         <div
@@ -544,6 +547,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               </a>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

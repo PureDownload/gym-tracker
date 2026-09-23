@@ -1,16 +1,29 @@
-import type { WorkoutSession, Exercise } from '../types/workout';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from '../types/workout';
+import { PRESET_TEMPLATES } from '../data/presetTemplates';
 
 const DB_NAME = 'IronTrackDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const WORKOUTS_STORE = 'workouts';
 const CUSTOM_EXERCISES_STORE = 'custom_exercises';
+const TEMPLATES_STORE = 'templates';
+const BODY_METRICS_STORE = 'body_metrics';
+
 const LS_WORKOUTS_KEY = 'irontrack_workouts_backup';
 const LS_CUSTOM_EX_KEY = 'irontrack_custom_exercises';
 const LS_PINNED_EX_KEY = 'irontrack_pinned_exercises';
+const LS_TEMPLATES_KEY = 'irontrack_templates';
+const LS_BODY_METRICS_KEY = 'irontrack_body_metrics';
+const LS_USER_PROFILE_KEY = 'irontrack_user_profile';
 const LS_PENDING_QUEUE_KEY = 'irontrack_pending_sync_queue';
 
 export interface PendingSyncItem {
-  type: 'upsert_workout' | 'delete_workout';
+  type:
+    | 'upsert_workout'
+    | 'delete_workout'
+    | 'upsert_template'
+    | 'delete_template'
+    | 'upsert_body_metric'
+    | 'delete_body_metric';
   payload: any;
   timestamp: number;
 }
@@ -36,6 +49,12 @@ class StorageService {
         }
         if (!db.objectStoreNames.contains(CUSTOM_EXERCISES_STORE)) {
           db.createObjectStore(CUSTOM_EXERCISES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(TEMPLATES_STORE)) {
+          db.createObjectStore(TEMPLATES_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(BODY_METRICS_STORE)) {
+          db.createObjectStore(BODY_METRICS_STORE, { keyPath: 'id' });
         }
       };
 
@@ -250,27 +269,230 @@ class StorageService {
     return updated;
   }
 
+  // -------------------------------------------------------------
+  // Workout Templates CRUD
+  // -------------------------------------------------------------
+  async getTemplates(): Promise<WorkoutTemplate[]> {
+    try {
+      const db = await this.initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(TEMPLATES_STORE, 'readonly');
+        const store = tx.objectStore(TEMPLATES_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          let list = (req.result || []) as WorkoutTemplate[];
+          if (list.length === 0) {
+            const local = this.getFromLocalStorage<WorkoutTemplate[]>(LS_TEMPLATES_KEY);
+            if (local && local.length > 0) {
+              list = local;
+            } else {
+              // Initialize with preset templates
+              list = [...PRESET_TEMPLATES];
+            }
+          }
+          this.saveToLocalStorage(LS_TEMPLATES_KEY, list);
+          resolve(list);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      const local = this.getFromLocalStorage<WorkoutTemplate[]>(LS_TEMPLATES_KEY);
+      return local && local.length > 0 ? local : [...PRESET_TEMPLATES];
+    }
+  }
+
+  async saveTemplate(template: WorkoutTemplate): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(TEMPLATES_STORE, 'readwrite');
+        const store = tx.objectStore(TEMPLATES_STORE);
+        const req = store.put(template);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed saving template to IDB', e);
+    }
+    const current = await this.getTemplates();
+    const idx = current.findIndex((t) => t.id === template.id);
+    if (idx >= 0) {
+      current[idx] = template;
+    } else {
+      current.unshift(template);
+    }
+    this.saveToLocalStorage(LS_TEMPLATES_KEY, current);
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(TEMPLATES_STORE, 'readwrite');
+        const store = tx.objectStore(TEMPLATES_STORE);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed deleting template from IDB', e);
+    }
+    const current = await this.getTemplates();
+    const filtered = current.filter((t) => t.id !== id);
+    this.saveToLocalStorage(LS_TEMPLATES_KEY, filtered);
+  }
+
+  public async upsertTemplatesFromRemote(incoming: WorkoutTemplate[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const current = await this.getTemplates();
+    const map = new Map<string, WorkoutTemplate>();
+    current.forEach((t) => map.set(t.id, t));
+    incoming.forEach((t) => map.set(t.id, t));
+    const merged = Array.from(map.values()).sort(
+      (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)
+    );
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction(TEMPLATES_STORE, 'readwrite');
+      const store = tx.objectStore(TEMPLATES_STORE);
+      merged.forEach((t) => store.put(t));
+    } catch (e) {
+      console.warn('Bulk save templates to IDB failed', e);
+    }
+    this.saveToLocalStorage(LS_TEMPLATES_KEY, merged);
+  }
+
+  // -------------------------------------------------------------
+  // Body Metrics Tracking CRUD
+  // -------------------------------------------------------------
+  async getBodyMetrics(): Promise<BodyMetricEntry[]> {
+    try {
+      const db = await this.initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(BODY_METRICS_STORE, 'readonly');
+        const store = tx.objectStore(BODY_METRICS_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          let list = (req.result || []) as BodyMetricEntry[];
+          list.sort((a, b) => b.date.localeCompare(a.date));
+          if (list.length === 0) {
+            const local = this.getFromLocalStorage<BodyMetricEntry[]>(LS_BODY_METRICS_KEY);
+            if (local && local.length > 0) list = local;
+          }
+          this.saveToLocalStorage(LS_BODY_METRICS_KEY, list);
+          resolve(list);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      const local = this.getFromLocalStorage<BodyMetricEntry[]>(LS_BODY_METRICS_KEY) || [];
+      return local.sort((a, b) => b.date.localeCompare(a.date));
+    }
+  }
+
+  async saveBodyMetric(entry: BodyMetricEntry): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(BODY_METRICS_STORE, 'readwrite');
+        const store = tx.objectStore(BODY_METRICS_STORE);
+        const req = store.put(entry);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed saving body metric to IDB', e);
+    }
+    const current = await this.getBodyMetrics();
+    const idx = current.findIndex((m) => m.id === entry.id || m.date === entry.date);
+    if (idx >= 0) {
+      current[idx] = entry;
+    } else {
+      current.push(entry);
+    }
+    current.sort((a, b) => b.date.localeCompare(a.date));
+    this.saveToLocalStorage(LS_BODY_METRICS_KEY, current);
+  }
+
+  async deleteBodyMetric(id: string): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(BODY_METRICS_STORE, 'readwrite');
+        const store = tx.objectStore(BODY_METRICS_STORE);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed deleting body metric from IDB', e);
+    }
+    const current = await this.getBodyMetrics();
+    const filtered = current.filter((m) => m.id !== id);
+    this.saveToLocalStorage(LS_BODY_METRICS_KEY, filtered);
+  }
+
+  public async upsertBodyMetricsFromRemote(incoming: BodyMetricEntry[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const current = await this.getBodyMetrics();
+    const map = new Map<string, BodyMetricEntry>();
+    current.forEach((m) => map.set(m.id, m));
+    incoming.forEach((m) => map.set(m.id, m));
+    const merged = Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction(BODY_METRICS_STORE, 'readwrite');
+      const store = tx.objectStore(BODY_METRICS_STORE);
+      merged.forEach((m) => store.put(m));
+    } catch (e) {
+      console.warn('Bulk save body metrics to IDB failed', e);
+    }
+    this.saveToLocalStorage(LS_BODY_METRICS_KEY, merged);
+  }
+
+  // User strength profile (Gender & Default Bodyweight)
+  getUserProfile(): { gender: 'male' | 'female'; bodyWeightKg: number } {
+    const saved = this.getFromLocalStorage<{
+      gender: 'male' | 'female';
+      bodyWeightKg: number;
+    }>(LS_USER_PROFILE_KEY);
+    return saved || { gender: 'male', bodyWeightKg: 70 };
+  }
+
+  saveUserProfile(profile: { gender: 'male' | 'female'; bodyWeightKg: number }): void {
+    this.saveToLocalStorage(LS_USER_PROFILE_KEY, profile);
+  }
+
   // Backup & Restore
   async exportJSON(): Promise<string> {
     const workouts = await this.getWorkouts();
     const customExercises = await this.getCustomExercises();
+    const templates = await this.getTemplates();
+    const bodyMetrics = await this.getBodyMetrics();
     const backupObj = {
       app: 'IronTrack',
-      version: '1.0.0',
+      version: '1.1.0',
       exportedAt: new Date().toISOString(),
       data: {
         workouts,
         customExercises,
+        templates,
+        bodyMetrics,
       },
     };
     return JSON.stringify(backupObj, null, 2);
   }
 
-  async importJSON(jsonStr: string): Promise<{ success: boolean; count: number; error?: string }> {
+  async importJSON(
+    jsonStr: string
+  ): Promise<{ success: boolean; count: number; error?: string }> {
     try {
       const parsed = JSON.parse(jsonStr);
-      const workouts: WorkoutSession[] = parsed?.data?.workouts || (Array.isArray(parsed) ? parsed : []);
+      const workouts: WorkoutSession[] =
+        parsed?.data?.workouts || (Array.isArray(parsed) ? parsed : []);
       const customExercises: Exercise[] = parsed?.data?.customExercises || [];
+      const templates: WorkoutTemplate[] = parsed?.data?.templates || [];
+      const bodyMetrics: BodyMetricEntry[] = parsed?.data?.bodyMetrics || [];
 
       if (!Array.isArray(workouts)) {
         throw new Error('导入文件格式不正确，缺少有效的训练记录数据');
@@ -279,6 +501,12 @@ class StorageService {
       await this.saveWorkoutsBulk(workouts);
       for (const ex of customExercises) {
         await this.saveCustomExercise(ex);
+      }
+      for (const t of templates) {
+        await this.saveTemplate(t);
+      }
+      for (const bm of bodyMetrics) {
+        await this.saveBodyMetric(bm);
       }
 
       return { success: true, count: workouts.length };

@@ -1,31 +1,19 @@
 import React from 'react';
-import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles, Cloud, RefreshCw, Palette } from 'lucide-react';
+import { Flame, Cloud, RefreshCw, User } from 'lucide-react';
 import type { SyncStatusInfo } from '../types/cloud';
 
 interface HeaderProps {
-  isWideMode: boolean;
-  onToggleWideMode: () => void;
-  onOpenBackupModal: () => void;
-  onOpenTechDocsModal: () => void;
-  onOpenUpdateModal: () => void;
-  onOpenCloudModal: () => void;
-  onOpenThemeModal: () => void;
-  activeThemeName?: string;
   syncStatus?: SyncStatusInfo;
   hasUpdate?: boolean;
+  onNavigateToProfile?: () => void;
+  onOpenCloudModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  isWideMode,
-  onToggleWideMode,
-  onOpenBackupModal,
-  onOpenTechDocsModal,
-  onOpenUpdateModal,
-  onOpenCloudModal,
-  onOpenThemeModal,
-  activeThemeName,
   syncStatus,
   hasUpdate = false,
+  onNavigateToProfile,
+  onOpenCloudModal,
 }) => {
   return (
     <header className="app-header">
@@ -39,125 +27,74 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      <div className="header-actions">
-        {/* Version Check & Update button */}
-        <button
-          className="icon-btn"
-          onClick={onOpenUpdateModal}
-          title={hasUpdate ? '发现新版本，点击查看更新' : '检查应用版本与更新'}
-          style={{ position: 'relative', color: hasUpdate ? 'var(--accent-primary)' : 'inherit' }}
-        >
-          <Sparkles size={18} />
-          {hasUpdate && (
-            <span
-              style={{
-                position: 'absolute',
-                top: '5px',
-                right: '5px',
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--accent-primary)',
-                boxShadow: '0 0 8px var(--accent-primary)',
-              }}
-            />
-          )}
-        </button>
-
-        {/* Personalized Skin & Theme Modal trigger */}
-        <button
-          className="icon-btn"
-          onClick={onOpenThemeModal}
-          title={`个性化皮肤方案 (当前: ${activeThemeName || '默认'})`}
-          style={{ color: 'var(--accent-primary)' }}
-        >
-          <Palette size={18} />
-        </button>
-
-        {/* Technical Architecture Document in-app reader */}
-        <button
-          className="icon-btn"
-          onClick={onOpenTechDocsModal}
-          title="查看项目技术架构方案文档"
-          style={{ color: 'var(--accent-cyan)' }}
-        >
-          <FileCode2 size={18} />
-        </button>
-
-        {/* Toggle between mobile frame & full-width preview on desktop browsers */}
-        <button
-          className={`icon-btn ${isWideMode ? 'active' : ''}`}
-          onClick={onToggleWideMode}
-          title={isWideMode ? '切换为手机尺寸视图' : '切换为宽屏视图'}
-        >
-          {isWideMode ? <Smartphone size={18} /> : <Monitor size={18} />}
-        </button>
-
-        {/* Private Cloud / Dual-Mode Sync Button */}
-        <button
-          className="icon-btn"
-          onClick={onOpenCloudModal}
-          title={
-            syncStatus?.state === 'online'
-              ? `已连接小主机 (${syncStatus.pingMs ? syncStatus.pingMs + 'ms' : '在线'})`
-              : syncStatus?.state === 'syncing'
-              ? '正在与小主机同步中...'
-              : syncStatus?.state === 'offline_pending'
-              ? '小主机暂未连通 (离线暂存模式)'
-              : '私有云与双模存储设置'
-          }
-          style={{
-            position: 'relative',
-            color:
-              syncStatus?.state === 'online'
-                ? 'var(--accent-primary)'
-                : syncStatus?.state === 'syncing'
-                ? 'var(--accent-cyan)'
-                : syncStatus?.state === 'offline_pending'
-                ? 'var(--accent-warning)'
-                : 'var(--text-muted)',
-          }}
-        >
-          {syncStatus?.state === 'syncing' ? (
-            <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
-          ) : (
-            <Cloud size={18} />
-          )}
-
-          {/* Status dot indicator */}
-          {syncStatus?.state && syncStatus.state !== 'local' && (
-            <span
-              style={{
-                position: 'absolute',
-                top: '5px',
-                right: '5px',
-                width: '7px',
-                height: '7px',
-                borderRadius: '50%',
-                backgroundColor:
+      <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Subtle Cloud Sync Status Pill */}
+        {syncStatus && (
+          <button
+            type="button"
+            className="header-sync-pill"
+            onClick={onOpenCloudModal || onNavigateToProfile}
+            title={
+              syncStatus.state === 'online'
+                ? `私有云已连通 (${syncStatus.pingMs ? syncStatus.pingMs + 'ms' : '在线'})`
+                : syncStatus.state === 'syncing'
+                ? '正在与小主机增量同步...'
+                : syncStatus.state === 'offline_pending'
+                ? '小主机暂未连通 (离线暂存)'
+                : '本地数据模式'
+            }
+          >
+            {syncStatus.state === 'syncing' ? (
+              <RefreshCw size={13} className="animate-spin" color="var(--accent-cyan)" />
+            ) : (
+              <Cloud
+                size={14}
+                color={
                   syncStatus.state === 'online'
-                    ? 'var(--accent-primary)'
+                    ? '#10b981'
+                    : syncStatus.state === 'offline_pending'
+                    ? '#f59e0b'
+                    : 'var(--text-muted)'
+                }
+              />
+            )}
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                color:
+                  syncStatus.state === 'online'
+                    ? '#10b981'
                     : syncStatus.state === 'syncing'
                     ? 'var(--accent-cyan)'
-                    : 'var(--accent-warning)',
-                boxShadow: `0 0 6px ${
-                  syncStatus.state === 'online'
-                    ? 'var(--accent-primary)'
-                    : 'var(--accent-warning)'
-                }`,
+                    : syncStatus.state === 'offline_pending'
+                    ? '#f59e0b'
+                    : 'var(--text-muted)',
               }}
-            />
-          )}
-        </button>
+            >
+              {syncStatus.state === 'online'
+                ? '已同步'
+                : syncStatus.state === 'syncing'
+                ? '同步中'
+                : syncStatus.state === 'offline_pending'
+                ? '待连通'
+                : '本地'}
+            </span>
+          </button>
+        )}
 
-        {/* Data Persistence & Backup modal trigger */}
-        <button
-          className="icon-btn"
-          onClick={onOpenBackupModal}
-          title="数据备份与持久化管理"
-        >
-          <Database size={18} />
-        </button>
+        {/* User Profile Avatar / Settings Shortcut */}
+        {onNavigateToProfile && (
+          <button
+            type="button"
+            className="header-profile-btn"
+            onClick={onNavigateToProfile}
+            title="进入「我的」个人中心与设置"
+          >
+            <User size={16} />
+            {hasUpdate && <span className="header-update-dot" />}
+          </button>
+        )}
       </div>
     </header>
   );

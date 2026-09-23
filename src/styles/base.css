@@ -7,33 +7,53 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html, body, #root {
   width: 100%;
   height: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
   background-color: var(--bg-main);
   color: var(--text-primary);
   font-family: var(--font-family);
   font-size: 15px;
   line-height: 1.5;
-  overflow-x: hidden;
+  overflow: hidden;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Slim & Premium */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--scrollbar-track, rgba(0, 0, 0, 0.2));
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.15));
-  border-radius: 4px;
+  background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.16));
+  border-radius: 9999px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.3));
+  background: var(--scrollbar-thumb-hover, rgba(255, 255, 255, 0.35));
+}
+
+/* Utility to completely hide scrollbar while preserving scrollability */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth momentum scrolling */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 button {

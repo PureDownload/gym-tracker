@@ -7,23 +7,32 @@ import {
   Trophy,
   Calendar,
   BatteryCharging,
+  Award,
+  Scale,
+  Plus,
 } from 'lucide-react';
-import type { WorkoutSession, Exercise, MuscleGroup } from '../types/workout';
+import type { WorkoutSession, Exercise, MuscleGroup, BodyMetricEntry } from '../types/workout';
 import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS } from '../data/presetExercises';
 import { analyticsService } from '../services/analytics';
+import { evaluateStrengthProfile, STRENGTH_RANK_META } from '../services/strengthStandards';
+import { storageService } from '../services/storage';
 
 interface AnalyticsViewProps {
   workouts: WorkoutSession[];
   customExercises: Exercise[];
+  bodyMetrics?: BodyMetricEntry[];
+  onOpenBodyMetricsModal?: () => void;
 }
 
-type SubTab = 'overview' | 'single';
+type SubTab = 'overview' | 'single' | 'standards' | 'body_metrics';
 type StrengthMetric = 'maxWeight' | 'estimated1RM' | 'totalVolume';
 type CardioMetric = 'durationMinutes' | 'distanceKm' | 'caloriesKcal';
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   workouts,
   customExercises,
+  bodyMetrics = [],
+  onOpenBodyMetricsModal,
 }) => {
   const allExercises = useMemo(
     () => [...PRESET_EXERCISES, ...customExercises],
@@ -31,6 +40,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   );
 
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('overview');
+
+  // Strength Standards & Profile State
+  const [userProfile] = useState(() => storageService.getUserProfile());
+  const [userWeightInput, setUserWeightInput] = useState<string>(() => {
+    const latestBM = bodyMetrics.find((m) => m.weightKg != null);
+    return String(latestBM?.weightKg || userProfile.bodyWeightKg || 70);
+  });
+  const [userGender, setUserGender] = useState<'male' | 'female'>(userProfile.gender || 'male');
+
+  const strengthProfile = useMemo(() => {
+    const w = parseFloat(userWeightInput) || 70;
+    return evaluateStrengthProfile(workouts, w, userGender);
+  }, [workouts, userWeightInput, userGender]);
 
   // =========================================================
   // 1. MACRO SCIENTIFIC CALCULATIONS (宏观科学可视化数据)
@@ -157,29 +179,49 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   return (
     <div className="animate-fade-in">
       {/* ========================================================
-          TOP NAVIGATION SUB-TABS (综合科学看板 vs 动作深度演进)
+          TOP NAVIGATION SUB-TABS (Sticky 毛玻璃吸顶导航栏)
           ======================================================== */}
-      <div className="analytics-tab-row">
-        <button
-          type="button"
-          className={`analytics-tab-btn ${activeSubTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('overview')}
-        >
-          <Activity size={15} />
-          <span>科学全景看板 (恢复/平衡/PR)</span>
-        </button>
+      <div className="analytics-sticky-header">
+        <div className="analytics-tab-row hide-scrollbar">
+          <button
+            type="button"
+            className={`analytics-tab-btn ${activeSubTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('overview')}
+          >
+            <Activity size={15} />
+            <span>科学全景</span>
+          </button>
 
-        <button
-          type="button"
-          className={`analytics-tab-btn ${activeSubTab === 'single' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('single')}
-        >
-          <TrendingUp size={15} />
-          <span>单动作渐进超负荷曲线</span>
-        </button>
+          <button
+            type="button"
+            className={`analytics-tab-btn ${activeSubTab === 'single' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('single')}
+          >
+            <TrendingUp size={15} />
+            <span>动作超负荷</span>
+          </button>
+
+          <button
+            type="button"
+            className={`analytics-tab-btn ${activeSubTab === 'standards' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('standards')}
+          >
+            <Award size={15} color="#f59e0b" />
+            <span>力量等级评定</span>
+          </button>
+
+          <button
+            type="button"
+            className={`analytics-tab-btn ${activeSubTab === 'body_metrics' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('body_metrics')}
+          >
+            <Scale size={15} color="#10b981" />
+            <span>身材与围度</span>
+          </button>
+        </div>
       </div>
 
-      {activeSubTab === 'overview' ? (
+      {activeSubTab === 'overview' && (
         // ========================================================
         // TAB A: MACRO SCIENTIFIC DASHBOARDS (科学全景四大看板)
         // ========================================================
@@ -520,7 +562,9 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             )}
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeSubTab === 'single' && (
         // ========================================================
         // TAB B: MICRO PROGRESSIVE OVERLOAD CURVES (单动作折线图)
         // ========================================================
@@ -915,6 +959,338 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB C: STRENGTH STANDARDS & RATIO EVALUATION (力量等级评定)
+          ======================================================== */}
+      {activeSubTab === 'standards' && (
+        <div>
+          {/* User Parameters Settings Card */}
+          <div className="card" style={{ marginBottom: '14px', padding: '14px' }}>
+            <div className="card-title-row" style={{ marginBottom: '10px' }}>
+              <div className="card-title" style={{ color: '#f59e0b' }}>
+                <Award size={18} />
+                力量等级与自重推比设置
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                  当前自重 (kg)
+                </label>
+                <input
+                  type="number"
+                  step="0.5"
+                  className="input-field"
+                  value={userWeightInput}
+                  onChange={(e) => {
+                    setUserWeightInput(e.target.value);
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                      storageService.saveUserProfile({ gender: userGender, bodyWeightKg: val });
+                    }
+                  }}
+                  style={{ width: '100%', marginTop: '4px', fontWeight: 700 }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                  生理性别
+                </label>
+                <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                  {(['male', 'female'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      className={`step-chip ${userGender === g ? 'active' : ''}`}
+                      onClick={() => {
+                        setUserGender(g);
+                        storageService.saveUserProfile({
+                          gender: g,
+                          bodyWeightKg: parseFloat(userWeightInput) || 70,
+                        });
+                      }}
+                      style={{ flex: 1, padding: '6px 0', textAlign: 'center', fontSize: '0.78rem' }}
+                    >
+                      {g === 'male' ? '男士 ♂' : '女士 ♀'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Hero Banner: Big 3 Total & Overall Rank */}
+          <div
+            className="strength-hero-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(59, 130, 246, 0.08))',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '14px',
+              padding: '16px',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  三大项综合评级 (卧推 + 深蹲 + 硬拉)
+                </div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-primary)', marginTop: '4px' }}>
+                  {STRENGTH_RANK_META[strengthProfile.overallRank].badge}{' '}
+                  {strengthProfile.overallRankLabel}
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  {STRENGTH_RANK_META[strengthProfile.overallRank].desc}
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>三大项总成绩</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f59e0b' }}>
+                  {strengthProfile.totalBigThree1RMKg}{' '}
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>kg</span>
+                </div>
+                <div style={{ fontSize: '0.76rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                  {strengthProfile.totalRatio} 倍自重
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Four Lifts Breakdown Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+            {strengthProfile.lifts.map((lift) => {
+              return (
+                <div
+                  key={lift.exerciseKey}
+                  className="card"
+                  style={{ padding: '14px', border: `1px solid var(--border-color)` }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-primary)' }}>
+                        {lift.exerciseName}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        最高单组: {lift.bestWeightKg}kg · 估算 1RM: {lift.bestEstimated1RMKg}kg
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          color: lift.rankColor,
+                          backgroundColor: `${lift.rankColor}20`,
+                          border: `1px solid ${lift.rankColor}40`,
+                        }}
+                      >
+                        {lift.rankLabel}
+                      </span>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
+                        推比 {lift.ratio}x BW
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar towards next tier */}
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      <span>晋级进度</span>
+                      <span>
+                        {lift.diffToNextKg > 0 ? (
+                          <>距离下一段位还差 <strong style={{ color: lift.rankColor }}>{lift.diffToNextKg} kg</strong> (目标 {lift.nextRankWeightKg}kg)</>
+                        ) : (
+                          <span style={{ color: '#10b981' }}>已达此段位顶峰！🎉</span>
+                        )}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        height: '6px',
+                        background: 'var(--bg-input)',
+                        borderRadius: '3px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${lift.progressPercent}%`,
+                          background: lift.rankColor,
+                          borderRadius: '3px',
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB D: BODY METRICS & PHYSIQUE TRACKING (身材与围度追踪)
+          ======================================================== */}
+      {activeSubTab === 'body_metrics' && (
+        <div>
+          {/* Top Action Card */}
+          <div
+            className="card"
+            style={{
+              padding: '14px',
+              marginBottom: '14px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                身体围度与体重打卡
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                已记录 {bodyMetrics.length} 次体测历史
+              </div>
+            </div>
+
+            {onOpenBodyMetricsModal && (
+              <button
+                className="btn-primary"
+                style={{ padding: '7px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                onClick={onOpenBodyMetricsModal}
+              >
+                <Plus size={15} />
+                <span>录入今日数据</span>
+              </button>
+            )}
+          </div>
+
+          {/* Latest Metric Hero Card */}
+          {bodyMetrics.length > 0 && (
+            <div
+              className="card"
+              style={{
+                padding: '16px',
+                marginBottom: '14px',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05))',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+              }}
+            >
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                最新体测 · {bodyMetrics[0].date}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '4px' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                  {bodyMetrics[0].weightKg != null ? bodyMetrics[0].weightKg : '--'}
+                </span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>kg</span>
+                {bodyMetrics[0].bodyFatPercent != null && (
+                  <span
+                    style={{
+                      marginLeft: '12px',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      color: '#10b981',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    体脂率 {bodyMetrics[0].bodyFatPercent}%
+                  </span>
+                )}
+              </div>
+
+              {/* Circumferences Pills */}
+              {bodyMetrics[0].measurements && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+                  {bodyMetrics[0].measurements.armCm && (
+                    <span className="step-chip" style={{ fontSize: '0.74rem' }}>
+                      💪 手臂 {bodyMetrics[0].measurements.armCm}cm
+                    </span>
+                  )}
+                  {bodyMetrics[0].measurements.chestCm && (
+                    <span className="step-chip" style={{ fontSize: '0.74rem' }}>
+                      🎽 胸围 {bodyMetrics[0].measurements.chestCm}cm
+                    </span>
+                  )}
+                  {bodyMetrics[0].measurements.waistCm && (
+                    <span className="step-chip" style={{ fontSize: '0.74rem' }}>
+                      📏 腰围 {bodyMetrics[0].measurements.waistCm}cm
+                    </span>
+                  )}
+                  {bodyMetrics[0].measurements.hipsCm && (
+                    <span className="step-chip" style={{ fontSize: '0.74rem' }}>
+                      🍑 臀围 {bodyMetrics[0].measurements.hipsCm}cm
+                    </span>
+                  )}
+                  {bodyMetrics[0].measurements.thighCm && (
+                    <span className="step-chip" style={{ fontSize: '0.74rem' }}>
+                      🦵 大腿 {bodyMetrics[0].measurements.thighCm}cm
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* History List */}
+          <div className="card" style={{ padding: '14px' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '10px' }}>
+              📋 历史打卡日志
+            </div>
+
+            {bodyMetrics.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-secondary)', fontSize: '0.84rem' }}>
+                暂无身材记录，点击上方按钮记录你的第一次体测吧！
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {bodyMetrics.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid var(--border-color)',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginRight: '8px' }}>
+                        {item.date}
+                      </span>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {item.weightKg != null ? `${item.weightKg} kg` : '-'}
+                      </strong>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                      {item.bodyFatPercent != null && <span>体脂 {item.bodyFatPercent}%</span>}
+                      {item.measurements?.armCm && <span>臂 {item.measurements.armCm}cm</span>}
+                      {item.measurements?.waistCm && <span>腰 {item.measurements.waistCm}cm</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

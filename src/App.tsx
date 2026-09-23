@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
-import type { WorkoutSession, Exercise } from './types/workout';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowUp } from 'lucide-react';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from './types/workout';
 import type { UpdateCheckResult } from './types/update';
 import { storageService } from './services/storage';
 import { updateService } from './services/updateService';
 import { Header } from './components/Header';
 import { Navbar, type TabType } from './components/Navbar';
 import { WorkoutLogger } from './components/WorkoutLogger';
-import { TrainingCalendar } from './components/TrainingCalendar';
 import { WorkoutHistory } from './components/WorkoutHistory';
 import { AnalyticsView } from './components/AnalyticsView';
 import { ExerciseLibrary } from './components/ExerciseLibrary';
+import { ProfileView } from './components/ProfileView';
 import { RestTimer } from './components/RestTimer';
 import { DataBackupModal } from './components/DataBackupModal';
 import { TechDocsModal } from './components/TechDocsModal';
 import { UpdateModal } from './components/UpdateModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
+import { BodyMetricsModal } from './components/BodyMetricsModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { cloudAuthService } from './services/cloudAuthService';
 import type { SyncStatusInfo } from './types/cloud';
@@ -26,9 +28,13 @@ import './styles/app.css';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('logger');
+  const mainContentRef = useRef<HTMLElement | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [pinnedExerciseIds, setPinnedExerciseIds] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [bodyMetrics, setBodyMetrics] = useState<BodyMetricEntry[]>([]);
   const [workoutToCopy, setWorkoutToCopy] = useState<WorkoutSession | null>(null);
   const [exerciseToAdd, setExerciseToAdd] = useState<Exercise | null>(null);
 
@@ -38,6 +44,7 @@ export function App() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
+  const [isBodyMetricsModalOpen, setIsBodyMetricsModalOpen] = useState<boolean>(false);
   const [themeState, setThemeState] = useState<ThemeState>(() => themeService.init());
   const [syncStatus, setSyncStatus] = useState<SyncStatusInfo>(cloudSyncService.getStatus());
   const [updateData, setUpdateData] = useState<UpdateCheckResult | null>(null);
@@ -52,9 +59,13 @@ export function App() {
       const loadedWorkouts = await storageService.getWorkouts();
       const loadedCustom = await storageService.getCustomExercises();
       const loadedPinned = storageService.getPinnedExerciseIds();
+      const loadedTemplates = await storageService.getTemplates();
+      const loadedMetrics = await storageService.getBodyMetrics();
       setWorkouts(loadedWorkouts);
       setCustomExercises(loadedCustom);
       setPinnedExerciseIds(loadedPinned);
+      setTemplates(loadedTemplates);
+      setBodyMetrics(loadedMetrics);
     } catch (e) {
       console.error('Failed to load initial data', e);
     } finally {
@@ -128,6 +139,39 @@ export function App() {
     setCustomExercises((prev) => prev.filter((e) => e.id !== id));
   };
 
+  const handleSaveTemplate = async (tmpl: WorkoutTemplate) => {
+    await storageService.saveTemplate(tmpl);
+    setTemplates((prev) => {
+      const idx = prev.findIndex((t) => t.id === tmpl.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = tmpl;
+        return copy;
+      }
+      return [tmpl, ...prev];
+    });
+    cloudSyncService.silentSyncOnSaveTemplate(tmpl);
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    await storageService.deleteTemplate(id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleSaveBodyMetric = async (entry: BodyMetricEntry) => {
+    await storageService.saveBodyMetric(entry);
+    setBodyMetrics((prev) => {
+      const filtered = prev.filter((m) => m.id !== entry.id && m.date !== entry.date);
+      return [entry, ...filtered].sort((a, b) => b.date.localeCompare(a.date));
+    });
+    cloudSyncService.silentSyncOnSaveBodyMetric(entry);
+  };
+
+  const handleDeleteBodyMetric = async (id: string) => {
+    await storageService.deleteBodyMetric(id);
+    setBodyMetrics((prev) => prev.filter((m) => m.id !== id));
+  };
+
   const handleTogglePinExercise = (exerciseId: string) => {
     const updated = storageService.togglePinnedExercise(exerciseId);
     setPinnedExerciseIds(updated);
@@ -143,34 +187,44 @@ export function App() {
     setIsRestTimerActive(true);
   };
 
+  const handleMainScroll = (e: React.UIEvent<HTMLElement>) => {
+    const top = e.currentTarget.scrollTop;
+    if (top > 320) {
+      if (!showBackToTop) setShowBackToTop(true);
+    } else {
+      if (showBackToTop) setShowBackToTop(false);
+    }
+  };
+
+  const scrollToTop = () => {
+    mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Reset scroll position to top whenever switching main tabs
+  useEffect(() => {
+    mainContentRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    setShowBackToTop(false);
+  }, [activeTab]);
+
   return (
     <div className="app-viewport">
       <div className={`mobile-shell ${isWideMode ? 'wide-mode' : ''}`}>
         {/* App Header */}
         <Header
-          isWideMode={isWideMode}
-          onToggleWideMode={() => setIsWideMode(!isWideMode)}
-          onOpenBackupModal={() => setIsBackupModalOpen(true)}
-          onOpenCloudModal={() => setIsCloudModalOpen(true)}
-          onOpenThemeModal={() => setIsThemeModalOpen(true)}
-          activeThemeName={
-            themeState.activeTheme.name + (themeState.mode === 'auto' ? ' (跟随系统)' : '')
-          }
           syncStatus={syncStatus}
-          onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
-          onOpenUpdateModal={() => {
-            setIsUpdateModalOpen(true);
-            if (!updateData || updateData.error) {
-              handleCheckUpdate(true);
-            }
-          }}
           hasUpdate={Boolean(
             updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
           )}
+          onNavigateToProfile={() => setActiveTab('profile')}
+          onOpenCloudModal={() => setIsCloudModalOpen(true)}
         />
 
         {/* Main Body Content */}
-        <main className="main-content">
+        <main
+          ref={mainContentRef}
+          className="main-content smooth-scroll"
+          onScroll={handleMainScroll}
+        >
           {isLoading ? (
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
               加载健身体系数据中...
@@ -182,6 +236,9 @@ export function App() {
                   customExercises={customExercises}
                   workouts={workouts}
                   pinnedExerciseIds={pinnedExerciseIds}
+                  templates={templates}
+                  onSaveTemplate={handleSaveTemplate}
+                  onDeleteTemplate={handleDeleteTemplate}
                   workoutToCopy={workoutToCopy}
                   onClearWorkoutToCopy={() => setWorkoutToCopy(null)}
                   exerciseToAdd={exerciseToAdd}
@@ -192,14 +249,7 @@ export function App() {
                 />
               )}
 
-              {activeTab === 'calendar' && (
-                <TrainingCalendar
-                  workouts={workouts}
-                  onCopyWorkoutToLogger={handleCopyWorkoutToLogger}
-                />
-              )}
-
-              {activeTab === 'history' && (
+              {(activeTab === 'history' || activeTab === ('calendar' as any)) && (
                 <WorkoutHistory
                   workouts={workouts}
                   onDeleteWorkout={handleDeleteWorkout}
@@ -211,6 +261,8 @@ export function App() {
                 <AnalyticsView
                   workouts={workouts}
                   customExercises={customExercises}
+                  bodyMetrics={bodyMetrics}
+                  onOpenBodyMetricsModal={() => setIsBodyMetricsModalOpen(true)}
                 />
               )}
 
@@ -228,8 +280,48 @@ export function App() {
                   }}
                 />
               )}
+
+              {activeTab === 'profile' && (
+                <ProfileView
+                  workouts={workouts}
+                  templates={templates}
+                  bodyMetrics={bodyMetrics}
+                  customExercises={customExercises}
+                  syncStatus={syncStatus}
+                  themeState={themeState}
+                  isWideMode={isWideMode}
+                  onToggleWideMode={() => setIsWideMode(!isWideMode)}
+                  onOpenBackupModal={() => setIsBackupModalOpen(true)}
+                  onOpenCloudModal={() => setIsCloudModalOpen(true)}
+                  onOpenThemeModal={() => setIsThemeModalOpen(true)}
+                  onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
+                  onOpenUpdateModal={() => {
+                    setIsUpdateModalOpen(true);
+                    if (!updateData || updateData.error) {
+                      handleCheckUpdate(true);
+                    }
+                  }}
+                  onOpenBodyMetricsModal={() => setIsBodyMetricsModalOpen(true)}
+                  hasUpdate={Boolean(
+                    updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
+                  )}
+                  updateData={updateData}
+                  onCheckUpdate={() => handleCheckUpdate(true)}
+                />
+              )}
             </>
           )}
+
+          {/* Floating Back To Top Button */}
+          <button
+            type="button"
+            className={`back-to-top-btn ${showBackToTop ? 'visible' : ''}`}
+            onClick={scrollToTop}
+            title="回到顶部"
+            aria-label="回到顶部"
+          >
+            <ArrowUp size={18} />
+          </button>
         </main>
 
         {/* Floating Rest Timer Bar when active */}
@@ -242,7 +334,13 @@ export function App() {
         )}
 
         {/* Bottom Tab Navigation */}
-        <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+        <Navbar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasUpdate={Boolean(
+            updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
+          )}
+        />
 
         {/* Local Storage & Backup Modal */}
         <DataBackupModal
@@ -277,6 +375,15 @@ export function App() {
         <ThemeModal
           isOpen={isThemeModalOpen}
           onClose={() => setIsThemeModalOpen(false)}
+        />
+
+        {/* Body Metrics Tracking Modal */}
+        <BodyMetricsModal
+          isOpen={isBodyMetricsModalOpen}
+          onClose={() => setIsBodyMetricsModalOpen(false)}
+          bodyMetrics={bodyMetrics}
+          onSaveMetric={handleSaveBodyMetric}
+          onDeleteMetric={handleDeleteBodyMetric}
         />
       </div>
     </div>

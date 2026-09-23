@@ -61,5 +61,37 @@ export function initDatabase() {
     );
 
     CREATE INDEX IF NOT EXISTS idx_custom_exercises_user_updated ON custom_exercises(user_id, updated_at);
+
+    CREATE TABLE IF NOT EXISTS templates (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      description TEXT,
+      exercises_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_templates_user_updated ON templates(user_id, updated_at);
+
+    CREATE TABLE IF NOT EXISTS body_metrics (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      weight_kg REAL,
+      body_fat_percent REAL,
+      measurements_json TEXT,
+      notes TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_body_metrics_user_updated ON body_metrics(user_id, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_body_metrics_user_date ON body_metrics(user_id, date);
   `);
 }

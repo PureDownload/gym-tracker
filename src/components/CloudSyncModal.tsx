@@ -187,7 +187,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ maxWidth: '520px' }}
       >
         {/* Modal Header */}
         <div className="modal-header">
@@ -199,6 +199,9 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
             <X size={16} />
           </button>
         </div>
+
+        {/* Modal Scrollable Body */}
+        <div className="modal-body smooth-scroll" style={{ paddingRight: '4px' }}>
 
         {/* Feedback Alert */}
         {feedback && (
@@ -620,6 +623,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
             </form>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

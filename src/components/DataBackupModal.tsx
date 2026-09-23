@@ -90,69 +90,71 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
           </button>
         </div>
 
-        {feedbackMsg && (
-          <div
-            style={{
-              padding: '10px 12px',
-              borderRadius: '8px',
-              marginBottom: '14px',
-              fontSize: '0.84rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              backgroundColor: feedbackMsg.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              border: `1px solid ${feedbackMsg.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-danger)'}`,
-              color: feedbackMsg.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-danger)',
-            }}
-          >
-            {feedbackMsg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-            {feedbackMsg.text}
+        <div className="modal-body smooth-scroll" style={{ paddingRight: '4px' }}>
+          {feedbackMsg && (
+            <div
+              style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                marginBottom: '14px',
+                fontSize: '0.84rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                backgroundColor: feedbackMsg.type === 'success' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${feedbackMsg.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-danger)'}`,
+                color: feedbackMsg.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-danger)',
+              }}
+            >
+              {feedbackMsg.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+              {feedbackMsg.text}
+            </div>
+          )}
+
+          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
+            IronTrack 是一个纯前端运行的独立应用，数据完全保存在您的设备本地（IndexedDB + LocalStorage）。为了防止浏览器清除缓存，建议定期导出备份。
           </div>
-        )}
 
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
-          IronTrack 是一个纯前端运行的独立应用，数据完全保存在您的设备本地（IndexedDB + LocalStorage）。为了防止浏览器清除缓存，建议定期导出备份。
-        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Export Button */}
+            <button className="btn-secondary" onClick={handleExport} style={{ justifyContent: 'flex-start' }}>
+              <Download size={18} color="var(--accent-cyan)" />
+              <span>导出全部数据 (JSON 文件下载)</span>
+            </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {/* Export Button */}
-          <button className="btn-secondary" onClick={handleExport} style={{ justifyContent: 'flex-start' }}>
-            <Download size={18} color="var(--accent-cyan)" />
-            <span>导出全部数据 (JSON 文件下载)</span>
-          </button>
+            {/* Import Button */}
+            <button
+              className="btn-secondary"
+              onClick={() => fileInputRef.current?.click()}
+              style={{ justifyContent: 'flex-start' }}
+            >
+              <Upload size={18} color="var(--accent-primary)" />
+              <span>导入备份文件 (恢复之前备份的 JSON)</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
 
-          {/* Import Button */}
-          <button
-            className="btn-secondary"
-            onClick={() => fileInputRef.current?.click()}
-            style={{ justifyContent: 'flex-start' }}
-          >
-            <Upload size={18} color="var(--accent-primary)" />
-            <span>导入备份文件 (恢复之前备份的 JSON)</span>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            style={{ display: 'none' }}
-            onChange={handleFileChange}
-          />
+            {/* Reset Demo Data Button */}
+            <button className="btn-secondary" onClick={handleResetSample} style={{ justifyContent: 'flex-start' }}>
+              <RotateCcw size={18} color="var(--accent-warning)" />
+              <span>载入示例数据 (体验连续进阶图表)</span>
+            </button>
 
-          {/* Reset Demo Data Button */}
-          <button className="btn-secondary" onClick={handleResetSample} style={{ justifyContent: 'flex-start' }}>
-            <RotateCcw size={18} color="var(--accent-warning)" />
-            <span>载入示例数据 (体验连续进阶图表)</span>
-          </button>
-
-          {/* Clear All Data Button */}
-          <button
-            className="btn-secondary"
-            onClick={handleClearAll}
-            style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)' }}
-          >
-            <Trash2 size={18} />
-            <span>清空所有本地数据</span>
-          </button>
+            {/* Clear All Data Button */}
+            <button
+              className="btn-secondary"
+              onClick={handleClearAll}
+              style={{ justifyContent: 'flex-start', color: 'var(--accent-danger)' }}
+            >
+              <Trash2 size={18} />
+              <span>清空所有本地数据</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -133,6 +133,8 @@ class CloudSyncService {
       const pullData = await pullRes.json();
       const remoteWorkouts: any[] = pullData.workouts || [];
       const remoteCustomExercises: any[] = pullData.customExercises || [];
+      const remoteTemplates: any[] = pullData.templates || [];
+      const remoteBodyMetrics: any[] = pullData.bodyMetrics || [];
 
       let hasLocalChanges = false;
 
@@ -178,9 +180,45 @@ class CloudSyncService {
         }
       }
 
+      // Apply pulled templates
+      if (remoteTemplates.length > 0) {
+        const toUpsertT: any[] = [];
+        for (const rt of remoteTemplates) {
+          if (rt.isDeleted) {
+            await storageService.deleteTemplate(rt.id);
+            hasLocalChanges = true;
+          } else {
+            toUpsertT.push(rt);
+            hasLocalChanges = true;
+          }
+        }
+        if (toUpsertT.length > 0) {
+          await storageService.upsertTemplatesFromRemote(toUpsertT);
+        }
+      }
+
+      // Apply pulled body metrics
+      if (remoteBodyMetrics.length > 0) {
+        const toUpsertBM: any[] = [];
+        for (const rbm of remoteBodyMetrics) {
+          if (rbm.isDeleted) {
+            await storageService.deleteBodyMetric(rbm.id);
+            hasLocalChanges = true;
+          } else {
+            toUpsertBM.push(rbm);
+            hasLocalChanges = true;
+          }
+        }
+        if (toUpsertBM.length > 0) {
+          await storageService.upsertBodyMetricsFromRemote(toUpsertBM);
+        }
+      }
+
       // 2. Push local items to server
       const localWorkouts = await storageService.getWorkouts();
       const localCustomExercises = await storageService.getCustomExercises();
+      const localTemplates = await storageService.getTemplates();
+      const localBodyMetrics = await storageService.getBodyMetrics();
 
       const pushRes = await fetch(`${serverUrl}/api/sync/push`, {
         method: 'POST',
@@ -197,6 +235,14 @@ class CloudSyncService {
             id: e.id,
             data: e,
             updatedAt: Date.now(),
+          })),
+          templates: localTemplates.map(t => ({
+            ...t,
+            updatedAt: t.updatedAt || Date.now(),
+          })),
+          bodyMetrics: localBodyMetrics.map(bm => ({
+            ...bm,
+            updatedAt: bm.updatedAt || Date.now(),
           })),
         }),
       });
@@ -378,6 +424,56 @@ class CloudSyncService {
     }
   }
 
+  // Silent sync helper for template save
+  public async silentSyncOnSaveTemplate(template: any): Promise<void> {
+    const config = cloudAuthService.getConfig();
+    if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) return;
+    try {
+      const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
+      await fetch(`${serverUrl}/api/sync/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.token}`,
+        },
+        body: JSON.stringify({
+          templates: [{ ...template, updatedAt: Date.now() }],
+        }),
+      });
+    } catch (e) {
+      storageService.enqueuePendingSync({
+        type: 'upsert_template',
+        payload: template,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  // Silent sync helper for body metric save
+  public async silentSyncOnSaveBodyMetric(metric: any): Promise<void> {
+    const config = cloudAuthService.getConfig();
+    if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) return;
+    try {
+      const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
+      await fetch(`${serverUrl}/api/sync/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.token}`,
+        },
+        body: JSON.stringify({
+          bodyMetrics: [{ ...metric, updatedAt: Date.now() }],
+        }),
+      });
+    } catch (e) {
+      storageService.enqueuePendingSync({
+        type: 'upsert_body_metric',
+        payload: metric,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
   // Migrate all local IndexedDB data to J1900
   public async migrateLocalToServer(): Promise<{ success: boolean; count: number; error?: string }> {
     const config = cloudAuthService.getConfig();
@@ -389,6 +485,8 @@ class CloudSyncService {
       const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
       const workouts = await storageService.getWorkouts();
       const customExercises = await storageService.getCustomExercises();
+      const templates = await storageService.getTemplates();
+      const bodyMetrics = await storageService.getBodyMetrics();
 
       const res = await fetch(`${serverUrl}/api/sync/migrate`, {
         method: 'POST',
@@ -396,7 +494,7 @@ class CloudSyncService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.token}`,
         },
-        body: JSON.stringify({ workouts, customExercises }),
+        body: JSON.stringify({ workouts, customExercises, templates, bodyMetrics }),
       });
 
       const data = await res.json();

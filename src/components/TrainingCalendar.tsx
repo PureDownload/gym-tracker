@@ -349,7 +349,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="modal-body smooth-scroll">
               {selectedDateWorkouts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-secondary)' }}>
                   <Dumbbell size={36} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
