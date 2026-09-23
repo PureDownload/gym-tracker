@@ -152,7 +152,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     }
   };
 
-  const strokeColor = isCardio ? '#f97316' : '#10b981';
+  const strokeColor = isCardio ? 'var(--muscle-cardio)' : 'var(--accent-primary)';
 
   return (
     <div className="animate-fade-in">
@@ -295,7 +295,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {/* Smart Advice Banner */}
             <div
               style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                backgroundColor: 'var(--bg-subtle)',
                 borderLeft: '3px solid var(--accent-primary)',
                 padding: '8px 12px',
                 borderRadius: '0 8px 8px 0',
@@ -325,7 +325,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                             borderRadius: '4px',
                             backgroundColor:
                               item.status === 'ready'
-                                ? 'rgba(16, 185, 129, 0.15)'
+                                ? 'var(--accent-primary-glow)'
                                 : item.status === 'recovering'
                                 ? 'rgba(245, 158, 11, 0.15)'
                                 : 'rgba(239, 68, 68, 0.15)',
@@ -395,7 +395,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                             borderRadius: '4px',
                             backgroundColor:
                               ws.status === 'optimal'
-                                ? 'rgba(16, 185, 129, 0.15)'
+                                ? 'var(--accent-primary-glow)'
                                 : ws.status === 'under'
                                 ? 'rgba(239, 68, 68, 0.12)'
                                 : 'rgba(245, 158, 11, 0.15)',
@@ -490,7 +490,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                                 fontSize: '0.65rem',
                                 padding: '1px 5px',
                                 borderRadius: '4px',
-                                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                                backgroundColor: 'var(--accent-primary-glow)',
                                 color: 'var(--accent-primary)',
                                 fontWeight: 800,
                               }}
@@ -552,11 +552,11 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
           {/* Progressive Overload Advisor Card */}
           <div className={`card suggestion-card ${analysis.status}`} style={{ borderLeftColor: analysis.statusColor }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
               <span
                 className="badge"
                 style={{
-                  backgroundColor: analysis.statusColor + '22',
+                  backgroundColor: 'var(--bg-subtle)',
                   color: analysis.statusColor,
                   border: `1px solid ${analysis.statusColor}`,
                 }}
@@ -564,9 +564,23 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                 {analysis.statusBadge}
               </span>
 
-              {!isCardio && analysis.status === 'increase' && (
-                <span style={{ fontSize: '0.78rem', color: 'var(--accent-primary)', fontWeight: 700 }}>
-                  建议目标: {analysis.targetNextWeight} kg
+              {!isCardio && analysis.targetNextWeight > 0 && (
+                <span
+                  style={{
+                    fontSize: '0.78rem',
+                    color: analysis.statusColor,
+                    fontWeight: 800,
+                    backgroundColor: 'var(--bg-input)',
+                    border: `1px solid ${analysis.statusColor}`,
+                    padding: '3px 9px',
+                    borderRadius: '20px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    boxShadow: 'var(--shadow-sm)',
+                  }}
+                >
+                  🎯 建议重量: {analysis.targetNextWeight} kg
                 </span>
               )}
             </div>
@@ -592,7 +606,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   gap: '6px',
                 }}
               >
-                <div>
+                <div style={{ background: 'var(--bg-input)', padding: '6px 4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>最大重量变化</div>
                   <div
                     style={{
@@ -610,7 +624,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   </div>
                 </div>
 
-                <div>
+                <div style={{ background: 'var(--bg-input)', padding: '6px 4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>1RM 走势</div>
                   <div
                     style={{
@@ -628,7 +642,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   </div>
                 </div>
 
-                <div>
+                <div style={{ background: 'var(--bg-input)', padding: '6px 4px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>总容量波动</div>
                   <div
                     style={{
@@ -745,7 +759,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                           y1={y}
                           x2={chartWidth - paddingRight}
                           y2={y}
-                          stroke="rgba(255, 255, 255, 0.08)"
+                          stroke="var(--border-subtle)"
                           strokeDasharray="3 3"
                         />
                         <text
@@ -788,7 +802,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                         cx={pt.x}
                         cy={pt.y}
                         r="5"
-                        fill="#111726"
+                        fill="var(--bg-surface)"
                         stroke={strokeColor}
                         strokeWidth="2.5"
                         style={{ cursor: 'pointer' }}

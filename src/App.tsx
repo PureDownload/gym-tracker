@@ -18,6 +18,9 @@ import { CloudSyncModal } from './components/CloudSyncModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { cloudAuthService } from './services/cloudAuthService';
 import type { SyncStatusInfo } from './types/cloud';
+import { ThemeModal } from './components/ThemeModal';
+import { themeService } from './services/themeService';
+import type { ThemeState } from './types/theme';
 import './styles/base.css';
 import './styles/app.css';
 
@@ -27,12 +30,15 @@ export function App() {
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [pinnedExerciseIds, setPinnedExerciseIds] = useState<string[]>([]);
   const [workoutToCopy, setWorkoutToCopy] = useState<WorkoutSession | null>(null);
+  const [exerciseToAdd, setExerciseToAdd] = useState<Exercise | null>(null);
 
   const [isWideMode, setIsWideMode] = useState<boolean>(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [isTechDocsModalOpen, setIsTechDocsModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
+  const [themeState, setThemeState] = useState<ThemeState>(() => themeService.init());
   const [syncStatus, setSyncStatus] = useState<SyncStatusInfo>(cloudSyncService.getStatus());
   const [updateData, setUpdateData] = useState<UpdateCheckResult | null>(null);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
@@ -88,9 +94,13 @@ export function App() {
       .then((res) => setUpdateData(res))
       .catch(() => {});
 
+    // 订阅主题切换
+    const unsubTheme = themeService.subscribe(setThemeState);
+
     return () => {
       unsubSync();
       unsubData();
+      unsubTheme();
     };
   }, []);
 
@@ -142,6 +152,10 @@ export function App() {
           onToggleWideMode={() => setIsWideMode(!isWideMode)}
           onOpenBackupModal={() => setIsBackupModalOpen(true)}
           onOpenCloudModal={() => setIsCloudModalOpen(true)}
+          onOpenThemeModal={() => setIsThemeModalOpen(true)}
+          activeThemeName={
+            themeState.activeTheme.name + (themeState.mode === 'auto' ? ' (跟随系统)' : '')
+          }
           syncStatus={syncStatus}
           onOpenTechDocsModal={() => setIsTechDocsModalOpen(true)}
           onOpenUpdateModal={() => {
@@ -170,6 +184,8 @@ export function App() {
                   pinnedExerciseIds={pinnedExerciseIds}
                   workoutToCopy={workoutToCopy}
                   onClearWorkoutToCopy={() => setWorkoutToCopy(null)}
+                  exerciseToAdd={exerciseToAdd}
+                  onClearExerciseToAdd={() => setExerciseToAdd(null)}
                   onTogglePinExercise={handleTogglePinExercise}
                   onSaveWorkout={handleSaveWorkout}
                   onSetCompleted={handleTriggerRestTimer}
@@ -206,6 +222,10 @@ export function App() {
                   onTogglePinExercise={handleTogglePinExercise}
                   onAddCustomExercise={handleAddCustomExercise}
                   onDeleteCustomExercise={handleDeleteCustomExercise}
+                  onSelectExerciseToLog={(exercise) => {
+                    setExerciseToAdd(exercise);
+                    setActiveTab('logger');
+                  }}
                 />
               )}
             </>
@@ -251,6 +271,12 @@ export function App() {
           updateData={updateData}
           isChecking={isCheckingUpdate}
           onRefreshCheck={() => handleCheckUpdate(true)}
+        />
+
+        {/* Personalized Theme & Skin Modal */}
+        <ThemeModal
+          isOpen={isThemeModalOpen}
+          onClose={() => setIsThemeModalOpen(false)}
         />
       </div>
     </div>

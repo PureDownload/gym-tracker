@@ -275,7 +275,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
                     padding: '1px 5px',
                     borderRadius: '4px',
                     backgroundColor: 'var(--accent-primary)',
-                    color: '#000',
+                    color: 'var(--text-inverse)',
                     fontWeight: 700,
                   }}
                 >
@@ -311,7 +311,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
                     padding: '1px 5px',
                     borderRadius: '4px',
                     backgroundColor: 'var(--accent-cyan)',
-                    color: '#000',
+                    color: 'var(--text-inverse)',
                     fontWeight: 700,
                   }}
                 >

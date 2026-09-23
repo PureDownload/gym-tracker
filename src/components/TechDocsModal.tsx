@@ -28,11 +28,11 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-cyan))',
+                background: 'var(--brand-icon-gradient)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#090d16',
+                color: 'var(--text-inverse)',
                 fontWeight: 900,
               }}
             >
@@ -309,7 +309,7 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
               </div>
 
               <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
-                <div style={{ fontWeight: 800, color: '#eab308', marginBottom: '4px' }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent-warning)', marginBottom: '4px' }}>
                   ⚡ 国内高速镜像加速通道 (ghproxy)
                 </div>
                 <div style={{ fontSize: '0.78rem' }}>
@@ -318,7 +318,7 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
               </div>
 
               <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
-                <div style={{ fontWeight: 800, color: '#a855f7', marginBottom: '4px' }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent-purple)', marginBottom: '4px' }}>
                   🛡️ 针对公共代理 403 限流的 CDN 自动容灾降级
                 </div>
                 <div style={{ fontSize: '0.78rem' }}>
@@ -327,7 +327,7 @@ export const TechDocsModal: React.FC<TechDocsModalProps> = ({ isOpen, onClose })
               </div>
 
               <div style={{ background: 'var(--bg-input)', padding: '12px', borderRadius: '8px' }}>
-                <div style={{ fontWeight: 800, color: '#f43f5e', marginBottom: '4px' }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent-danger)', marginBottom: '4px' }}>
                   🔐 Android Keystore 永久签名与数据平滑保留
                 </div>
                 <div style={{ fontSize: '0.78rem' }}>

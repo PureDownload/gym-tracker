@@ -11,6 +11,7 @@ interface ExerciseLibraryProps {
   onTogglePinExercise: (exerciseId: string) => void;
   onAddCustomExercise: (exercise: Exercise) => void;
   onDeleteCustomExercise: (id: string) => void;
+  onSelectExerciseToLog?: (exercise: Exercise) => void;
 }
 
 export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
@@ -20,6 +21,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
   onTogglePinExercise,
   onAddCustomExercise,
   onDeleteCustomExercise,
+  onSelectExerciseToLog,
 }) => {
   const allExercises = [...PRESET_EXERCISES, ...customExercises];
 
@@ -283,7 +285,7 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
                   {best && (
                     <div
                       style={{
-                        background: 'rgba(16, 185, 129, 0.1)',
+                        background: 'var(--accent-primary-glow)',
                         border: '1px solid var(--accent-primary)',
                         padding: '4px 8px',
                         borderRadius: '6px',
@@ -298,6 +300,32 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
                         {best.maxWeight}kg (1RM {best.max1RM}k)
                       </div>
                     </div>
+                  )}
+
+                  {/* Quick Add to Today's Workout */}
+                  {onSelectExerciseToLog && (
+                    <button
+                      className="btn-secondary"
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '0.72rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        whiteSpace: 'nowrap',
+                        borderRadius: '6px',
+                        border: '1px solid var(--accent-primary-glow)',
+                        color: 'var(--accent-primary)',
+                        background: 'var(--accent-primary-glow)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => onSelectExerciseToLog(ex)}
+                      title="将此动作加入今日训练并跳转记录"
+                    >
+                      <Plus size={12} />
+                      加入训练
+                    </button>
                   )}
 
                   {/* Pin toggle button */}

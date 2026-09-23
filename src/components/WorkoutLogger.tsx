@@ -35,6 +35,8 @@ interface WorkoutLoggerProps {
   pinnedExerciseIds: string[];
   workoutToCopy?: WorkoutSession | null;
   onClearWorkoutToCopy?: () => void;
+  exerciseToAdd?: Exercise | null;
+  onClearExerciseToAdd?: () => void;
   onTogglePinExercise: (exerciseId: string) => void;
   onSaveWorkout: (workout: WorkoutSession) => void;
   onSetCompleted: () => void; // triggers rest timer
@@ -142,6 +144,8 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   pinnedExerciseIds,
   workoutToCopy,
   onClearWorkoutToCopy,
+  exerciseToAdd,
+  onClearExerciseToAdd,
   onTogglePinExercise,
   onSaveWorkout,
   onSetCompleted,
@@ -422,6 +426,18 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
     setIsPickerOpen(false);
   };
+
+  // Watch for external exercise addition (e.g. from Exercise Library "+ 加入训练")
+  useEffect(() => {
+    if (exerciseToAdd) {
+      handleSelectExercise(exerciseToAdd);
+      setSavedSuccessMsg(`已将「${exerciseToAdd.name}」加入当前训练！`);
+      setTimeout(() => setSavedSuccessMsg(''), 2500);
+      if (onClearExerciseToAdd) {
+        onClearExerciseToAdd();
+      }
+    }
+  }, [exerciseToAdd]);
 
   const handleAddSet = (exerciseIndex: number) => {
     const updated = [...activeExercises];
@@ -731,7 +747,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
           style={{
             padding: '10px 14px',
             borderRadius: '10px',
-            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            backgroundColor: 'var(--accent-primary-glow)',
             border: '1px solid var(--accent-primary)',
             color: 'var(--accent-primary)',
             display: 'flex',
@@ -912,7 +928,8 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                 style={{
                   fontSize: '0.74rem',
                   color: 'var(--text-secondary)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  backgroundColor: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-subtle)',
                   padding: '5px 10px',
                   borderRadius: '6px',
                   marginBottom: '10px',
@@ -1220,7 +1237,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                                 <button
                                   type="button"
                                   className="dock-pill-btn"
-                                  style={{ color: 'var(--accent-primary)', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                  style={{ color: 'var(--accent-primary)', borderColor: 'var(--accent-primary-glow)' }}
                                   onClick={() => setPlateCalcWeight(set.weightKg || 40)}
                                 >
                                   <Calculator size={11} style={{ display: 'inline', marginRight: 2 }} />
@@ -1548,7 +1565,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         <div className="modal-overlay">
           <div className="modal-content" style={{ textAlign: 'center', padding: '24px 20px' }}>
             <div className="celebration-badge-hero">
-              <Trophy size={36} color="#ffffff" />
+              <Trophy size={36} color="var(--primary-text)" />
             </div>
 
             <h3 style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: '6px' }}>
@@ -1583,7 +1600,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
               </div>
 
               <div className="celebration-stat-card">
-                <div className="celebration-stat-val" style={{ color: '#ec4899' }}>
+                <div className="celebration-stat-val" style={{ color: 'var(--accent-purple)' }}>
                   ~{Math.round(celebrationData.durationMin * 7.5)} kcal
                 </div>
                 <div className="celebration-stat-lbl">预估消耗</div>

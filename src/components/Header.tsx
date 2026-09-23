@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles, Cloud, RefreshCw } from 'lucide-react';
+import { Database, Monitor, Smartphone, Flame, FileCode2, Sparkles, Cloud, RefreshCw, Palette } from 'lucide-react';
 import type { SyncStatusInfo } from '../types/cloud';
 
 interface HeaderProps {
@@ -9,6 +9,8 @@ interface HeaderProps {
   onOpenTechDocsModal: () => void;
   onOpenUpdateModal: () => void;
   onOpenCloudModal: () => void;
+  onOpenThemeModal: () => void;
+  activeThemeName?: string;
   syncStatus?: SyncStatusInfo;
   hasUpdate?: boolean;
 }
@@ -20,6 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTechDocsModal,
   onOpenUpdateModal,
   onOpenCloudModal,
+  onOpenThemeModal,
+  activeThemeName,
   syncStatus,
   hasUpdate = false,
 }) => {
@@ -58,6 +62,16 @@ export const Header: React.FC<HeaderProps> = ({
               }}
             />
           )}
+        </button>
+
+        {/* Personalized Skin & Theme Modal trigger */}
+        <button
+          className="icon-btn"
+          onClick={onOpenThemeModal}
+          title={`个性化皮肤方案 (当前: ${activeThemeName || '默认'})`}
+          style={{ color: 'var(--accent-primary)' }}
+        >
+          <Palette size={18} />
         </button>
 
         {/* Technical Architecture Document in-app reader */}

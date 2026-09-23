@@ -5,13 +5,38 @@
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
 
-  /* Color Palette - Dark Cyber Iron */
+  /* Typography */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Muscle Colors (Consistent functional indicators) */
+  --muscle-chest: #38bdf8;
+  --muscle-back: #4ade80;
+  --muscle-legs: #f59e0b;
+  --muscle-shoulders: #a855f7;
+  --muscle-arms: #ec4899;
+  --muscle-core: #06b6d4;
+  --muscle-cardio: #f97316;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --glass-blur: blur(16px);
+}
+
+/* ========================================================
+   1. 暗夜极客 (Cyber Dark) - 默认深色主题
+   ======================================================== */
+:root, [data-theme="cyber-dark"] {
   --bg-main: #090d16;
   --bg-surface: #111726;
   --bg-card: rgba(22, 30, 49, 0.85);
   --bg-card-hover: rgba(30, 41, 66, 0.95);
   --bg-input: #172033;
   --bg-elevated: #1e293b;
+  --bg-header: rgba(17, 23, 38, 0.88);
+  --bg-nav: rgba(17, 23, 38, 0.94);
+  --bg-subtle: rgba(255, 255, 255, 0.04);
   
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-medium: rgba(255, 255, 255, 0.16);
@@ -32,26 +57,308 @@
   --text-muted: #64748b;
   --text-inverse: #090d16;
 
-  /* Muscle Colors */
-  --muscle-chest: #38bdf8;
-  --muscle-back: #4ade80;
-  --muscle-legs: #f59e0b;
-  --muscle-shoulders: #a855f7;
-  --muscle-arms: #ec4899;
-  --muscle-core: #06b6d4;
-  --muscle-cardio: #f97316;
+  /* Gradients & Shadows */
+  --brand-title-gradient: linear-gradient(to right, #ffffff, #94a3b8);
+  --brand-icon-gradient: linear-gradient(135deg, #10b981, #06b6d4);
+  --primary-gradient: linear-gradient(135deg, #10b981, #059669);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(16, 185, 129, 0.08);
+  --viewport-bg-glow2: rgba(6, 182, 212, 0.08);
+  --shell-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
 
-  /* Typography */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  /* Elevation & Blur */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.25);
-  --glass-blur: blur(16px);
 
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  --scrollbar-track: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================================
+   2. 黑金尊享 (Obsidian Gold) - 深色
+   ======================================================== */
+[data-theme="obsidian-gold"] {
+  --bg-main: #070709;
+  --bg-surface: #121216;
+  --bg-card: rgba(26, 26, 34, 0.88);
+  --bg-card-hover: rgba(36, 36, 48, 0.95);
+  --bg-input: #1a1a23;
+  --bg-elevated: #242430;
+  --bg-header: rgba(18, 18, 22, 0.88);
+  --bg-nav: rgba(18, 18, 22, 0.94);
+  --bg-subtle: rgba(245, 158, 11, 0.05);
+
+  --border-subtle: rgba(245, 158, 11, 0.12);
+  --border-medium: rgba(245, 158, 11, 0.22);
+  --border-focus: #fbbf24;
+
+  --accent-primary: #f59e0b;    /* Warm Amber Gold */
+  --accent-primary-glow: rgba(245, 158, 11, 0.4);
+  --accent-cyan: #fbbf24;       /* Champagne Gold */
+  --accent-cyan-glow: rgba(251, 191, 36, 0.35);
+  --accent-warning: #eab308;
+  --accent-danger: #f87171;
+  --accent-purple: #c084fc;
+
+  --text-primary: #fef3c7;
+  --text-secondary: #d1d5db;
+  --text-muted: #857e75;
+  --text-inverse: #070709;
+
+  --brand-title-gradient: linear-gradient(to right, #fef3c7, #f59e0b);
+  --brand-icon-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --primary-gradient: linear-gradient(135deg, #f59e0b, #b45309);
+  --primary-text: #1a1200;
+  --viewport-bg-glow1: rgba(245, 158, 11, 0.08);
+  --viewport-bg-glow2: rgba(217, 119, 6, 0.08);
+  --shell-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(245, 158, 11, 0.3);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.3);
+  --scrollbar-thumb: rgba(245, 158, 11, 0.25);
+  --scrollbar-thumb-hover: rgba(245, 158, 11, 0.45);
+}
+
+/* ========================================================
+   3. 深海迷航 (Ocean Abyss) - 深色
+   ======================================================== */
+[data-theme="ocean-abyss"] {
+  --bg-main: #060f1e;
+  --bg-surface: #0c1a2d;
+  --bg-card: rgba(18, 36, 62, 0.85);
+  --bg-card-hover: rgba(25, 48, 80, 0.95);
+  --bg-input: #12243d;
+  --bg-elevated: #1a3356;
+  --bg-header: rgba(12, 26, 45, 0.88);
+  --bg-nav: rgba(12, 26, 45, 0.94);
+  --bg-subtle: rgba(14, 165, 233, 0.05);
+
+  --border-subtle: rgba(14, 165, 233, 0.12);
+  --border-medium: rgba(14, 165, 233, 0.22);
+  --border-focus: #38bdf8;
+
+  --accent-primary: #0ea5e9;    /* Ocean Blue */
+  --accent-primary-glow: rgba(14, 165, 233, 0.35);
+  --accent-cyan: #2dd4bf;       /* Turquoise */
+  --accent-cyan-glow: rgba(45, 212, 191, 0.35);
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-purple: #818cf8;
+
+  --text-primary: #f0f9ff;
+  --text-secondary: #93c5fd;
+  --text-muted: #627d98;
+  --text-inverse: #060f1e;
+
+  --brand-title-gradient: linear-gradient(to right, #ffffff, #7dd3fc);
+  --brand-icon-gradient: linear-gradient(135deg, #0ea5e9, #2dd4bf);
+  --primary-gradient: linear-gradient(135deg, #0ea5e9, #0284c7);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(14, 165, 233, 0.09);
+  --viewport-bg-glow2: rgba(45, 212, 191, 0.09);
+  --shell-shadow: 0 0 50px rgba(2, 6, 23, 0.85);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 20px rgba(14, 165, 233, 0.3);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb: rgba(14, 165, 233, 0.2);
+  --scrollbar-thumb-hover: rgba(14, 165, 233, 0.4);
+}
+
+/* ========================================================
+   4. 赛博霓虹 (Neon Matrix) - 深色
+   ======================================================== */
+[data-theme="neon-matrix"] {
+  --bg-main: #0c0717;
+  --bg-surface: #160d29;
+  --bg-card: rgba(32, 19, 58, 0.85);
+  --bg-card-hover: rgba(45, 27, 80, 0.95);
+  --bg-input: #20133a;
+  --bg-elevated: #2d1b52;
+  --bg-header: rgba(22, 13, 41, 0.88);
+  --bg-nav: rgba(22, 13, 41, 0.94);
+  --bg-subtle: rgba(168, 85, 247, 0.06);
+
+  --border-subtle: rgba(168, 85, 247, 0.15);
+  --border-medium: rgba(168, 85, 247, 0.25);
+  --border-focus: #c084fc;
+
+  --accent-primary: #a855f7;    /* Electric Purple */
+  --accent-primary-glow: rgba(168, 85, 247, 0.38);
+  --accent-cyan: #f43f5e;       /* Hot Pink */
+  --accent-cyan-glow: rgba(244, 63, 94, 0.38);
+  --accent-warning: #f59e0b;
+  --accent-danger: #ff2e63;
+  --accent-purple: #c084fc;
+
+  --text-primary: #faf5ff;
+  --text-secondary: #d8b4fe;
+  --text-muted: #826e9b;
+  --text-inverse: #0c0717;
+
+  --brand-title-gradient: linear-gradient(to right, #faf5ff, #f43f5e);
+  --brand-icon-gradient: linear-gradient(135deg, #a855f7, #f43f5e);
+  --primary-gradient: linear-gradient(135deg, #a855f7, #ec4899);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(168, 85, 247, 0.1);
+  --viewport-bg-glow2: rgba(244, 63, 94, 0.1);
+  --shell-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 20px rgba(168, 85, 247, 0.35);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb: rgba(168, 85, 247, 0.25);
+  --scrollbar-thumb-hover: rgba(168, 85, 247, 0.45);
+}
+
+/* ========================================================
+   5. 纯净晨曦 (Pure Dawn) - 默认浅色主题
+   ======================================================== */
+[data-theme="pure-dawn"] {
+  --bg-main: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #f8fafc;
+  --bg-input: #f1f5f9;
+  --bg-elevated: #e2e8f0;
+  --bg-header: rgba(255, 255, 255, 0.9);
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-subtle: rgba(0, 0, 0, 0.03);
+
+  --border-subtle: rgba(15, 23, 42, 0.08);
+  --border-medium: rgba(15, 23, 42, 0.15);
+  --border-focus: #059669;
+
+  --accent-primary: #059669;    /* Crisp Emerald */
+  --accent-primary-glow: rgba(5, 150, 105, 0.25);
+  --accent-cyan: #0891b2;
+  --accent-cyan-glow: rgba(8, 145, 178, 0.25);
+  --accent-warning: #d97706;
+  --accent-danger: #dc2626;
+  --accent-purple: #9333ea;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --brand-title-gradient: linear-gradient(to right, #0f172a, #334155);
+  --brand-icon-gradient: linear-gradient(135deg, #059669, #0891b2);
+  --primary-gradient: linear-gradient(135deg, #059669, #10b981);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(5, 150, 105, 0.08);
+  --viewport-bg-glow2: rgba(8, 145, 178, 0.08);
+  --shell-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
+
+  --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.09);
+  --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.2);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
+  --scrollbar-thumb: rgba(15, 23, 42, 0.2);
+  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.35);
+}
+
+/* ========================================================
+   6. 钛金银霜 (Titanium Frost) - 浅色
+   ======================================================== */
+[data-theme="titanium-frost"] {
+  --bg-main: #eaeff5;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #f1f5f9;
+  --bg-input: #e9edf3;
+  --bg-elevated: #dbe2ec;
+  --bg-header: rgba(255, 255, 255, 0.9);
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-subtle: rgba(37, 99, 235, 0.04);
+
+  --border-subtle: rgba(30, 41, 59, 0.08);
+  --border-medium: rgba(30, 41, 59, 0.16);
+  --border-focus: #2563eb;
+
+  --accent-primary: #2563eb;    /* Cobalt Blue */
+  --accent-primary-glow: rgba(37, 99, 235, 0.25);
+  --accent-cyan: #0284c7;
+  --accent-cyan-glow: rgba(2, 132, 199, 0.25);
+  --accent-warning: #d97706;
+  --accent-danger: #dc2626;
+  --accent-purple: #7c3aed;
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  --brand-title-gradient: linear-gradient(to right, #1e293b, #475569);
+  --brand-icon-gradient: linear-gradient(135deg, #2563eb, #38bdf8);
+  --primary-gradient: linear-gradient(135deg, #2563eb, #3b82f6);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(37, 99, 235, 0.08);
+  --viewport-bg-glow2: rgba(56, 189, 248, 0.08);
+  --shell-shadow: 0 10px 40px rgba(30, 41, 59, 0.12);
+
+  --shadow-sm: 0 2px 8px rgba(30, 41, 59, 0.06);
+  --shadow-md: 0 8px 24px rgba(30, 41, 59, 0.09);
+  --shadow-glow: 0 0 20px rgba(37, 99, 235, 0.22);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.05);
+  --scrollbar-thumb: rgba(30, 41, 59, 0.2);
+  --scrollbar-thumb-hover: rgba(30, 41, 59, 0.35);
+}
+
+/* ========================================================
+   7. 暖柔春樱 (Sakura Breeze) - 浅色
+   ======================================================== */
+[data-theme="sakura-breeze"] {
+  --bg-main: #fdf4f5;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: #fdf2f4;
+  --bg-input: #fae8eb;
+  --bg-elevated: #f5d0d6;
+  --bg-header: rgba(255, 255, 255, 0.9);
+  --bg-nav: rgba(255, 255, 255, 0.95);
+  --bg-subtle: rgba(225, 29, 72, 0.04);
+
+  --border-subtle: rgba(225, 29, 72, 0.1);
+  --border-medium: rgba(225, 29, 72, 0.2);
+  --border-focus: #e11d48;
+
+  --accent-primary: #e11d48;    /* Rose Pink */
+  --accent-primary-glow: rgba(225, 29, 72, 0.25);
+  --accent-cyan: #db2777;
+  --accent-cyan-glow: rgba(219, 39, 119, 0.25);
+  --accent-warning: #d97706;
+  --accent-danger: #e11d48;
+  --accent-purple: #9333ea;
+
+  --text-primary: #2a171b;
+  --text-secondary: #684d53;
+  --text-muted: #9f7c84;
+  --text-inverse: #ffffff;
+
+  --brand-title-gradient: linear-gradient(to right, #2a171b, #684d53);
+  --brand-icon-gradient: linear-gradient(135deg, #e11d48, #db2777);
+  --primary-gradient: linear-gradient(135deg, #e11d48, #f43f5e);
+  --primary-text: #ffffff;
+  --viewport-bg-glow1: rgba(225, 29, 72, 0.08);
+  --viewport-bg-glow2: rgba(219, 39, 119, 0.08);
+  --shell-shadow: 0 10px 40px rgba(225, 29, 72, 0.1);
+
+  --shadow-sm: 0 2px 8px rgba(225, 29, 72, 0.06);
+  --shadow-md: 0 8px 24px rgba(225, 29, 72, 0.09);
+  --shadow-glow: 0 0 20px rgba(225, 29, 72, 0.22);
+
+  --scrollbar-track: rgba(0, 0, 0, 0.04);
+  --scrollbar-thumb: rgba(225, 29, 72, 0.2);
+  --scrollbar-thumb-hover: rgba(225, 29, 72, 0.35);
 }

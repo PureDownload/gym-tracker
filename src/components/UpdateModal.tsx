@@ -98,13 +98,13 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                 height: '36px',
                 borderRadius: '10px',
                 background: hasUpdate
-                  ? 'linear-gradient(135deg, #10b981, #06b6d4)'
-                  : 'linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05))',
+                  ? 'var(--brand-icon-gradient)'
+                  : 'var(--bg-elevated)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: hasUpdate ? '#090d16' : 'var(--text-secondary)',
-                boxShadow: hasUpdate ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none',
+                color: hasUpdate ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                boxShadow: hasUpdate ? '0 0 15px var(--accent-primary-glow)' : 'none',
               }}
             >
               <Sparkles size={20} />
@@ -166,10 +166,10 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
               alignItems: 'center',
               gap: '6px',
               background: hasUpdate
-                ? 'rgba(16, 185, 129, 0.15)'
-                : 'rgba(255, 255, 255, 0.06)',
+                ? 'var(--accent-primary-glow)'
+                : 'var(--bg-subtle)',
               color: hasUpdate ? 'var(--accent-primary)' : 'var(--text-secondary)',
-              border: `1px solid ${hasUpdate ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-subtle)'}`,
+              border: `1px solid ${hasUpdate ? 'var(--accent-primary)' : 'var(--border-subtle)'}`,
             }}
           >
             {hasUpdate ? (
@@ -350,7 +350,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                                   padding: '1px 5px',
                                   borderRadius: '4px',
                                   background: 'var(--accent-primary)',
-                                  color: '#090d16',
+                                  color: 'var(--text-inverse)',
                                   fontWeight: 700,
                                 }}
                               >

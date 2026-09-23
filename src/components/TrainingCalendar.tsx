@@ -151,7 +151,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 background: mg.isCurrentMonth
-                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 182, 212, 0.12))'
+                  ? 'linear-gradient(135deg, var(--accent-primary-glow), var(--accent-cyan-glow))'
                   : 'var(--bg-card)',
                 borderBottom: isExpanded ? '1px solid var(--border-subtle)' : 'none',
               }}
@@ -168,7 +168,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                         padding: '1px 6px',
                         borderRadius: '4px',
                         backgroundColor: 'var(--accent-primary)',
-                        color: '#090d16',
+                        color: 'var(--text-inverse)',
                         fontWeight: 800,
                       }}
                     >
@@ -248,7 +248,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                           height: '46px',
                           borderRadius: '8px',
                           background: hasTrained
-                            ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 182, 212, 0.15))'
+                            ? 'linear-gradient(135deg, var(--accent-primary-glow), var(--accent-cyan-glow))'
                             : 'var(--bg-input)',
                           border: isToday
                             ? '2px solid var(--accent-cyan)'
@@ -262,7 +262,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                           cursor: 'pointer',
                           position: 'relative',
                           transition: 'all 0.15s ease',
-                          boxShadow: hasTrained ? '0 0 8px rgba(16, 185, 129, 0.15)' : 'none',
+                          boxShadow: hasTrained ? '0 0 8px var(--accent-primary-glow)' : 'none',
                         }}
                       >
                         <span
@@ -272,7 +272,7 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                             color: isToday
                               ? 'var(--accent-cyan)'
                               : hasTrained
-                              ? '#ffffff'
+                              ? 'var(--text-primary)'
                               : 'var(--text-secondary)',
                           }}
                         >

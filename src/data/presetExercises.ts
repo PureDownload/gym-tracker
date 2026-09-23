@@ -21,7 +21,7 @@ export const EQUIPMENT_LABELS: Record<EquipmentType, { label: string; icon: stri
 
 export const PRESET_EXERCISES: Exercise[] = [
   // ==========================================
-  // --- 1. 胸部 Chest (26 个动作) ---
+  // --- 1. 胸部 Chest (29 个动作) ---
   // ==========================================
   {
     id: 'chest_bb_flat_bench',
@@ -239,9 +239,33 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'bodyweight',
     description: '双脚踩在板凳或台阶上，重心前移，强化上胸与肩前束',
   },
+  {
+    id: 'chest_landmine_press',
+    name: '地雷管单臂/双臂推胸',
+    nameEn: 'Landmine Chest Press',
+    category: 'chest',
+    equipment: 'barbell',
+    description: '固定杠铃一端呈45°斜向推出，精准轰击上胸与前锯肌，对肩袖极度友好',
+  },
+  {
+    id: 'chest_cable_incline_fly_seated',
+    name: '坐姿上斜绳索夹胸',
+    nameEn: 'Seated Incline Cable Fly',
+    category: 'chest',
+    equipment: 'cable',
+    description: '背靠30°斜凳，双臂由后下方往斜前上方弧形环抱，锁骨段上胸全程恒定张力',
+  },
+  {
+    id: 'chest_svend_press',
+    name: '斯文德推胸 / 哑铃夹片推胸',
+    nameEn: 'Svend Press / Plate Pinch Press',
+    category: 'chest',
+    equipment: 'dumbbell',
+    description: '双手掌心向内用力夹紧杠铃片或小哑铃向前平推，内侧胸肌极强等长收缩与充血泵感',
+  },
 
   // ==========================================
-  // --- 2. 背部 Back (28 个动作) ---
+  // --- 2. 背部 Back (32 个动作) ---
   // ==========================================
   {
     id: 'back_deadlift',
@@ -475,9 +499,41 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'barbell',
     description: '杠铃担于上背，微屈膝俯身折叠髋关节，深层强化后侧链与下背',
   },
+  {
+    id: 'back_landmine_meadows_row',
+    name: '梅多斯地雷管划船',
+    nameEn: 'Meadows Landmine Row',
+    category: 'back',
+    equipment: 'barbell',
+    description: '约翰·梅多斯招牌动作，站姿侧对地雷管单手肘部后拉，极致拉伸并孤立背阔肌下束与大圆肌',
+  },
+  {
+    id: 'back_seal_row',
+    name: '海豹划船 / 悬空俯卧划船',
+    nameEn: 'Seal Row (Prone Row)',
+    category: 'back',
+    equipment: 'barbell',
+    description: '胸腹平贴在垫高的长凳上俯卧提拉，完全消除下背竖脊肌代偿与借力，孤立背肌厚度',
+  },
+  {
+    id: 'back_kelso_shrug',
+    name: '凯尔索斜板提肩',
+    nameEn: 'Kelso Shrug',
+    category: 'back',
+    equipment: 'dumbbell',
+    description: '俯卧在30°上斜凳上手臂伸直，仅靠中下斜方肌与菱形肌后缩肩胛骨，矫正圆肩驼背神器',
+  },
+  {
+    id: 'back_cable_lat_prayer',
+    name: '龙门架背阔肌祈祷者 / 跪姿直臂下拉',
+    nameEn: 'Cable Lat Prayer / Kneeling Straight-Arm Pulldown',
+    category: 'back',
+    equipment: 'cable',
+    description: '跪姿面对高位绳索微屈髋向前大弧线下压，顶端超长伸展背阔肌、底端强力向后下方收紧',
+  },
 
   // ==========================================
-  // --- 3. 腿部 Legs (28 个动作) ---
+  // --- 3. 腿部 Legs (34 个动作) ---
   // ==========================================
   {
     id: 'legs_bb_squat',
@@ -703,9 +759,57 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'machine',
     description: '前脚掌搭在蹬板边缘，大负荷长行程提踵泵感极强',
   },
+  {
+    id: 'legs_zercher_squat',
+    name: '泽奇深蹲',
+    nameEn: 'Zercher Squat',
+    category: 'legs',
+    equipment: 'barbell',
+    description: '杠铃托在双肘臂弯处下蹲，大幅减轻脊柱垂直剪切力，同时极度强化核心抗屈曲与股四头肌',
+  },
+  {
+    id: 'legs_landmine_squat',
+    name: '地雷管深蹲',
+    nameEn: 'Landmine Squat',
+    category: 'legs',
+    equipment: 'barbell',
+    description: '双手捧住地雷管杠铃头深蹲，引导自然的臀部后坐髋屈轨迹，新手掌握标准深蹲发力神器',
+  },
+  {
+    id: 'legs_reverse_nordic_curl',
+    name: '反向诺迪克弯举',
+    nameEn: 'Reverse Nordic Curl',
+    category: 'legs',
+    equipment: 'bodyweight',
+    description: '双膝跪地躯干笔直向后倾倒，纯自重离心拉长强化股直肌与髌腱韧性，预防膝前侧疼痛',
+  },
+  {
+    id: 'legs_banded_clamshell',
+    name: '弹力带蚌式开合',
+    nameEn: 'Banded Clamshell',
+    category: 'legs',
+    equipment: 'other',
+    description: '侧卧屈膝并在双膝上方套弹力带开合外展，精准唤醒臀中肌，预防深蹲膝内扣与骨盆晃动',
+  },
+  {
+    id: 'legs_single_leg_glute_bridge',
+    name: '单腿自重臀桥',
+    nameEn: 'Single-Leg Glute Bridge',
+    category: 'legs',
+    equipment: 'bodyweight',
+    description: '仰卧单脚踩地发力顶起骨盆，孤立唤醒单侧臀大肌并纠正骨盆两侧肌肉受力不平衡',
+  },
+  {
+    id: 'legs_tibialis_raise',
+    name: '胫骨前肌靠墙提趾',
+    nameEn: 'Tibialis Raise (Knee Protection)',
+    category: 'legs',
+    equipment: 'bodyweight',
+    description: '背靠墙面双脚前伸主动向上勾脚尖，强化小腿前侧胫骨前肌减震力，消除跳跃与下蹲膝关节压力',
+  },
 
   // ==========================================
-  // --- 4. 肩部 Shoulders (24 个动作) ---
+  // --- 4. 肩部 Shoulders (28 个动作) ---
   // ==========================================
   {
     id: 'shoulders_bb_ohp',
@@ -899,9 +1003,41 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'cable',
     description: '大臂紧夹身体，平稳外拉，肩袖肌群康复与热身黄金动作',
   },
+  {
+    id: 'shoulders_cable_y_raise',
+    name: '龙门架绳索Y字平举',
+    nameEn: 'Cable Y-Raise',
+    category: 'shoulders',
+    equipment: 'cable',
+    description: '双手交叉握低位绳索向斜前上方30°-45°成Y字展臂，顺应肌纤维走向激活三角肌后束与下斜方肌，肩峰零撞击',
+  },
+  {
+    id: 'shoulders_band_pull_apart',
+    name: '弹力带面拉 / 开肩撕裂',
+    nameEn: 'Band Pull-Apart',
+    category: 'shoulders',
+    equipment: 'other',
+    description: '双手执轻弹力带水平撕拉至胸前，强化菱形肌与肩袖外旋肌群，体态矫正与推举前热身激活必备',
+  },
+  {
+    id: 'shoulders_lu_raises',
+    name: '吕小军式侧平举',
+    nameEn: 'Lu Raises (Full ROM Lateral Raise)',
+    category: 'shoulders',
+    equipment: 'dumbbell',
+    description: '手持轻哑铃由大腿前侧环形平举直至头顶正上方合拢，全幅度强化整个肩带活动度与前锯肌协调力',
+  },
+  {
+    id: 'shoulders_egyptian_lateral_raise',
+    name: '埃及式斜身绳索侧平举',
+    nameEn: 'Egyptian Leaning Cable Lateral Raise',
+    category: 'shoulders',
+    equipment: 'cable',
+    description: '单手扶龙门架立柱身体外倾30度，单手拉动低位绳索侧平举，全程消除三角肌底端死点，张力爆棚',
+  },
 
   // ==========================================
-  // --- 5. 手臂 Arms (26 个动作) ---
+  // --- 5. 手臂 Arms (30 个动作) ---
   // ==========================================
   {
     id: 'arms_bb_curl',
@@ -1111,9 +1247,41 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'dumbbell',
     description: '双手提重物昂首阔步前行，静态撕扯前臂屈肌抓握力与斜方肌承重力',
   },
+  {
+    id: 'arms_bayesian_curl',
+    name: '贝叶斯绳索弯举',
+    nameEn: 'Bayesian Cable Curl',
+    category: 'arms',
+    equipment: 'cable',
+    description: '背对龙门架低位绳索单手向前跨步弯举，二头肌长头在超长伸展位维持顶峰阻力，现代肌肥大黄金动作',
+  },
+  {
+    id: 'arms_overhead_cable_extension',
+    name: '俯身过顶绳索三头伸展',
+    nameEn: 'Overhead Cable Triceps Extension',
+    category: 'arms',
+    equipment: 'cable',
+    description: '背对高位绳索身体微前倾向前伸展手臂，长头处于充分拉伸位受力，最大化刺激肱三头肌长头',
+  },
+  {
+    id: 'arms_katana_extension',
+    name: '武士刀绳索臂屈伸',
+    nameEn: 'Katana Cable Triceps Extension',
+    category: 'arms',
+    equipment: 'cable',
+    description: '双臂过头在脑后如同拔出武士刀般对角线斜向上伸展，最符合手臂肌纤维自然发力轨迹',
+  },
+  {
+    id: 'arms_incline_hammer_curl',
+    name: '上斜板哑铃锤式弯举',
+    nameEn: 'Incline Dumbbell Hammer Curl',
+    category: 'arms',
+    equipment: 'dumbbell',
+    description: '斜躺在45°凳面上中立握持哑铃弯举，同时强力撕裂肱桡肌、肱肌与二头肌长头外侧',
+  },
 
   // ==========================================
-  // --- 6. 核心 Core (20 个动作) ---
+  // --- 6. 核心 Core (23 个动作) ---
   // ==========================================
   {
     id: 'core_hanging_leg_raise',
@@ -1275,9 +1443,33 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'bodyweight',
     description: '呼尽空气收紧内吸肚脐贴向脊椎，收紧内脏束腹腹横肌缩小腰围',
   },
+  {
+    id: 'core_turkish_get_up',
+    name: '土耳其起立',
+    nameEn: 'Turkish Get-Up',
+    category: 'core',
+    equipment: 'dumbbell',
+    description: '从仰卧单手托举重物到站立再躺下的全身闭链复合动作，强化肩关节稳定性与360度抗旋转核心',
+  },
+  {
+    id: 'core_pallof_press',
+    name: '帕洛夫抗旋转推胸',
+    nameEn: 'Pallof Press',
+    category: 'core',
+    equipment: 'cable',
+    description: '站姿侧对龙门架或弹力带，将握把由胸前向正前方推出保持静止，极强抵抗身体扭转的核心抗旋训练',
+  },
+  {
+    id: 'core_hollow_body_hold',
+    name: '舟状核心悬挺',
+    nameEn: 'Hollow Body Hold',
+    category: 'core',
+    equipment: 'bodyweight',
+    description: '体操经典核心静态支撑，下背部贴死地面双手双腿悬空延展，塑造铁板一块的强悍腹壁',
+  },
 
   // ==========================================
-  // --- 7. 全身 / 有氧 / 体能 Cardio (19 个动作) ---
+  // --- 7. 全身 / 有氧 / 体能 Cardio (24 个动作) ---
   // ==========================================
   {
     id: 'cardio_treadmill',
@@ -1449,5 +1641,49 @@ export const PRESET_EXERCISES: Exercise[] = [
     equipment: 'other',
     isCardio: true,
     description: '深层按压肌筋膜激痛点，促进淋巴回流与肌肉组织自我修复',
+  },
+  {
+    id: 'cardio_sled_push_pull',
+    name: '阻力雪橇推拉 (Prowler Sled)',
+    nameEn: 'Prowler Sled Push & Pull',
+    category: 'cardio',
+    equipment: 'other',
+    isCardio: true,
+    description: '无离心肌肉损伤的高功率心肺代谢训练，强力提升下肢爆发力、臀腿耐力与高心率燃脂',
+  },
+  {
+    id: 'cardio_kettlebell_snatch',
+    name: '壶铃单臂抓举',
+    nameEn: 'Kettlebell Snatch',
+    category: 'cardio',
+    equipment: 'dumbbell',
+    isCardio: true,
+    description: '从双腿间启动将壶铃一气呵成摆荡冲至头顶，极致调动后侧链爆发力与全身协调心肺',
+  },
+  {
+    id: 'cardio_worlds_greatest_stretch',
+    name: '世界最伟大拉伸 (全身关节激活)',
+    nameEn: "World's Greatest Stretch",
+    category: 'cardio',
+    equipment: 'bodyweight',
+    isCardio: true,
+    description: '深蹲弓步 + 骨盆下沉 + 胸椎旋转 + 腘绳肌伸展三合一，力量训练前全身关节活动黄金动作',
+  },
+  {
+    id: 'cardio_pigeon_pose',
+    name: '鸽子式深层臀肌与髋屈肌拉伸',
+    nameEn: 'Pigeon Pose Hip Stretch',
+    category: 'cardio',
+    equipment: 'bodyweight',
+    description: '深层开髋动作，极大释放臀大肌、梨状肌与髋屈肌紧绷，消除下背酸胀与骨盆压迫',
+  },
+  {
+    id: 'cardio_90_90_hip_mobility',
+    name: '90/90 髋关节内外旋流动',
+    nameEn: '90/90 Hip Mobility Flow',
+    category: 'cardio',
+    equipment: 'bodyweight',
+    isCardio: true,
+    description: '双腿呈两个90度坐于地面进行主动髋内外旋切换，改善深蹲下潜深度与消除关节弹响',
   },
 ];

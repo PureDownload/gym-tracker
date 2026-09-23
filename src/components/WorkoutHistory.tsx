@@ -193,7 +193,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                           fontSize: '0.72rem',
                           padding: '1px 7px',
                           borderRadius: '4px',
-                          backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                          backgroundColor: 'var(--accent-primary-glow)',
                           color: 'var(--accent-primary)',
                           fontWeight: 600,
                         }}
@@ -230,8 +230,8 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                         padding: '5px 9px',
                         fontSize: '0.72rem',
                         color: 'var(--accent-cyan)',
-                        borderColor: 'rgba(6, 182, 212, 0.4)',
-                        backgroundColor: 'rgba(6, 182, 212, 0.08)',
+                        borderColor: 'var(--accent-cyan-glow)',
+                        backgroundColor: 'var(--bg-subtle)',
                       }}
                       onClick={(e) => handleCopy(e, dateGroup.sessions[0])}
                       title="一键将该日训练参数复制到记录界面"
