@@ -212,14 +212,29 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
         </div>
 
         <div className="version-timeline">
-          {/* v1.1.1 */}
+          {/* v1.1.3 */}
           <div className="version-timeline-item current">
             <div className="version-timeline-dot">
               <CheckCircle2 size={16} />
             </div>
             <div className="version-timeline-card">
               <div className="version-timeline-header">
-                <span className="version-timeline-ver">v1.1.1 (Current)</span>
+                <span className="version-timeline-ver">v1.1.3 (Current)</span>
+                <span className="version-timeline-tag">覆盖升级与签名固化</span>
+                <span className="version-timeline-time">2026-09</span>
+              </div>
+              <p className="version-timeline-summary">
+                原生升级体验增强：内置工程专属持久化签名 Keystore，彻底根治 CI 签名冲突报错；Gradle 动态绑定语义化 versionCode，支持全自动无缝覆盖升级。
+              </p>
+            </div>
+          </div>
+
+          {/* v1.1.1 */}
+          <div className="version-timeline-item">
+            <div className="version-timeline-dot" />
+            <div className="version-timeline-card">
+              <div className="version-timeline-header">
+                <span className="version-timeline-ver">v1.1.1</span>
                 <span className="version-timeline-tag">体验与构建优化</span>
                 <span className="version-timeline-time">2026-09</span>
               </div>

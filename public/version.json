@@ -1,9 +1,9 @@
 {
-  "version": "1.1.1",
-  "name": "IronTrack 铁脉健身 v1.1.1 体验优化与构建流增强",
-  "body": "### 🛠️ v1.1.1 体验优化与构建流增强\n\n#### 1. 自动化构建与 CI/CD 流水线优化\n- **构建环境兼容**：重构 GitHub Actions Android 打包流程，移除过时 setup-android 步骤，直接复用 Runner 预置 SDK 环境，彻底解决编译 tools 报错\n- **发版稳定性提升**：优化 Gradle 命令行编译参数与产物打包归档，确保多终端 Release APK 持续稳定发布\n\n#### 2. 原生二级页面架构演进与体验深化\n- **告别局促弹框**：“我的”中心设置项（私有云、备份导出、主题皮肤、体测、版本说明）全量适配为原生二级页面\n- **吸顶回退导航**：统一吸顶导航栏与平滑返回逻辑，层级更加清晰直观\n- **大屏自适应强化**：完善桌面宽屏与手机视口的适配布局，阅读与配置体验更舒展\n\n#### 3. 细节修复与稳定性增强\n- **版本说明中心**：新增版本演进历程与特性对照，支持一键检查更新与直达架构文档\n- **交互流畅度调优**：优化页面切换动画与微交互，提升整体操作跟手度",
-  "published_at": "2026-09-28T11:25:00Z",
-  "apk_name": "IronTrack-v1.1.1.apk",
-  "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.1.1/IronTrack-v1.1.1.apk",
+  "version": "1.1.3",
+  "name": "IronTrack 铁脉健身 v1.1.3 签名固化与覆盖升级增强",
+  "body": "### 🛠️ v1.1.3 签名固化与覆盖升级增强\n\n#### 1. Android 原生签名持久固化\n- **内置工程专属 Keystore**：固化 Android 签名密钥库与证书指纹，根治云端 CI 临时密钥引起的“与已安装应用签名不同”报错\n- **永久覆盖升级**：后续所有版本均保持相同签名，升级无需卸载，彻底杜绝本地健身数据丢失风险\n\n#### 2. 原生版本号动态同步机制\n- **Gradle 动态联动**：Gradle 自动绑定 package.json 版本号，动态换算语义化 versionCode（1.1.3 -> 10103）\n- **无缝覆盖安装**：确保系统安装器检测到版本号严格递增，支持 Android 手机直接点击覆盖安装\n\n#### 3. GitHub Actions 打包流水线优化\n- **版本提取修复**：修复手动触发打包时版本号硬编码兜底问题，自动读取真实发版版本\n- **产物命名标准化**：统一 Release APK 命名规范为 IronTrack-v1.1.3.apk",
+  "published_at": "2026-09-28T14:15:00Z",
+  "apk_name": "IronTrack-v1.1.3.apk",
+  "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.1.3/IronTrack-v1.1.3.apk",
   "html_url": "https://github.com/PureDownload/gym-tracker/releases"
 }

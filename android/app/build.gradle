@@ -38,8 +38,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        appSign {
+            def keystoreFile = file('signing.keystore')
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword 'irontrack123'
+                keyAlias 'irontrack'
+                keyPassword 'irontrack123'
+            }
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.appSign
+        }
         release {
+            signingConfig signingConfigs.appSign
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
