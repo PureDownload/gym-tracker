@@ -42,7 +42,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     serverTime: Date.now(),
     service: 'IronTrack J1900 Server',
-    version: '1.0.0',
+    version: '1.1.1',
   });
 });
 

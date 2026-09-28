@@ -136,19 +136,39 @@ jobs:
           npm run build
           npx cap sync android
 
+      - name: 提取版本号信息
+        id: app_info
+        run: |
+          PKG_VER=$(node -p "require('./package.json').version")
+          REF="${{ github.ref_name }}"
+          if [[ "$REF" =~ ^v[0-9] ]]; then
+            VERSION="$REF"
+          else
+            VERSION="v${PKG_VER}"
+          fi
+          CLEAN_VER=$(echo "$PKG_VER" | sed -E 's/^v//' | cut -d'-' -f1)
+          MAJOR=$(echo "$CLEAN_VER" | cut -d'.' -f1)
+          MINOR=$(echo "$CLEAN_VER" | cut -d'.' -f2)
+          PATCH=$(echo "$CLEAN_VER" | cut -d'.' -f3)
+          MAJOR=${MAJOR:-1}
+          MINOR=${MINOR:-0}
+          PATCH=${PATCH:-0}
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_name=${PKG_VER}" >> $GITHUB_OUTPUT
+          echo "version_code=${VERSION_CODE}" >> $GITHUB_OUTPUT
+
       - name: 执行 Gradle 命令行编译
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug -PversionCode=${{ steps.app_info.outputs.version_code }} -PversionName=${{ steps.app_info.outputs.version_name }} --no-daemon --stacktrace
 
       - name: 提取版本号并重命名 APK
         id: apk_info
         run: |
-          VERSION="${{ github.ref_name }}"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ ! "$VERSION" =~ ^v ]]; then
-            VERSION="v1.0.0-build-${{ github.run_number }}"
-          fi
+          VERSION="${{ steps.app_info.outputs.version }}"
           APK_NAME="IronTrack-${VERSION}.apk"
           cp android/app/build/outputs/apk/debug/app-debug.apk "${APK_NAME}"
           echo "apk_path=${APK_NAME}" >> $GITHUB_OUTPUT

@@ -1,4 +1,26 @@
 apply plugin: 'com.android.application'
+import groovy.json.JsonSlurper
+
+def getNpmVersion() {
+    def inputFile = new File(projectDir, "../../package.json")
+    if (inputFile.exists()) {
+        def packageJson = new JsonSlurper().parseText(inputFile.text)
+        return packageJson["version"] ?: "1.0.0"
+    }
+    return "1.0.0"
+}
+
+def getNpmVersionCode() {
+    def version = getNpmVersion()
+    try {
+        def clean = version.replaceAll(/^[vV]/, "").split("-")[0]
+        def parts = clean.tokenize('.').collect { it.toInteger() }
+        while (parts.size() < 3) parts.add(0)
+        return parts[0] * 10000 + parts[1] * 100 + parts[2]
+    } catch (Exception e) {
+        return 1
+    }
+}
 
 android {
     namespace = "com.irontrack.fitness"
@@ -7,8 +29,8 @@ android {
         applicationId "com.irontrack.fitness"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode project.hasProperty('versionCode') ? project.property('versionCode').toInteger() : getNpmVersionCode()
+        versionName project.hasProperty('versionName') ? project.property('versionName') : getNpmVersion()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
