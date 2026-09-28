@@ -1,11 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import { initDatabase } from './db.js';
 import { registerUser, loginUser, requireAuth, type AuthenticatedRequest } from './auth.js';
 import { syncRouter } from './routes/sync.js';
 
 dotenv.config();
+
+const serverPkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+const SERVER_VERSION: string = serverPkg.version || '1.0.0';
 
 // Initialize SQLite database
 initDatabase();
@@ -42,7 +46,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     serverTime: Date.now(),
     service: 'IronTrack J1900 Server',
-    version: '1.1.3',
+    version: SERVER_VERSION,
   });
 });
 
