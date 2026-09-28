@@ -1150,18 +1150,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
           <div
             className="card"
             style={{
-              padding: '14px',
+              padding: '14px 16px',
               marginBottom: '14px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              gap: '12px',
             }}
           >
-            <div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 身体围度与体重打卡
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', whiteSpace: 'nowrap' }}>
                 已记录 {bodyMetrics.length} 次体测历史
               </div>
             </div>
@@ -1169,7 +1170,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
             {onOpenBodyMetricsModal && (
               <button
                 className="btn-primary"
-                style={{ padding: '7px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{
+                  padding: '7px 12px',
+                  fontSize: '0.78rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                }}
                 onClick={onOpenBodyMetricsModal}
               >
                 <Plus size={15} />

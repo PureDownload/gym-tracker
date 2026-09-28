@@ -40,14 +40,14 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
         <div className="version-hero-header">
           <div className="version-pill-group">
             <span className="version-badge-pill current">当前版本 v{currentVersion}</span>
-            <span className="version-badge-pill milestone">重大里程碑</span>
+            <span className="version-badge-pill">体验优化</span>
           </div>
           <span className="version-release-date">2026 年 9 月更新</span>
         </div>
 
-        <h1 className="version-hero-title">IronTrack 铁脉健身 v1.1.0</h1>
+        <h1 className="version-hero-title">IronTrack 铁脉健身 v{currentVersion}</h1>
         <p className="version-hero-subtitle">
-          双端私有云无缝互通 · 训练台 HUD 现代化重塑 · 力量工具箱与多款专属皮肤
+          构建流水线优化 · 原生二级页面架构演进 · 私有云双端互通与极客工具箱
         </p>
 
         {/* Action Bar */}
@@ -212,14 +212,29 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
         </div>
 
         <div className="version-timeline">
-          {/* v1.1.0 */}
+          {/* v1.1.1 */}
           <div className="version-timeline-item current">
             <div className="version-timeline-dot">
               <CheckCircle2 size={16} />
             </div>
             <div className="version-timeline-card">
               <div className="version-timeline-header">
-                <span className="version-timeline-ver">v1.1.0 (Current)</span>
+                <span className="version-timeline-ver">v1.1.1 (Current)</span>
+                <span className="version-timeline-tag">体验与构建优化</span>
+                <span className="version-timeline-time">2026-09</span>
+              </div>
+              <p className="version-timeline-summary">
+                构建流升级：优化 GitHub Actions Android 编译流水线，修复 tools 兼容性错误；设置中心全面演进为原生二级页面，完善沉浸交互与大屏自适应。
+              </p>
+            </div>
+          </div>
+
+          {/* v1.1.0 */}
+          <div className="version-timeline-item">
+            <div className="version-timeline-dot" />
+            <div className="version-timeline-card">
+              <div className="version-timeline-header">
+                <span className="version-timeline-ver">v1.1.0</span>
                 <span className="version-timeline-tag milestone">里程碑大版本</span>
                 <span className="version-timeline-time">2026-09</span>
               </div>

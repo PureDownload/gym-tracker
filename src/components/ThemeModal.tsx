@@ -115,24 +115,24 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({
               className={`theme-card ${isActive ? 'active' : ''}`}
               onClick={() => handleSelectTheme(theme.id)}
             >
-              {/* Active Checkmark Pill */}
-              {isActive && (
-                <div className="theme-card-active-pill">
-                  <Check size={11} strokeWidth={3} />
-                  <span>{themeState.mode === 'auto' ? '系统匹配' : '已选用'}</span>
-                </div>
-              )}
-
               {/* Card Header */}
               <div className="theme-card-header">
                 <div className="theme-card-title-group">
                   <span className="theme-card-name">{theme.name}</span>
                   <span className="theme-card-en">{theme.enName}</span>
                 </div>
-                <span className="theme-card-mode-badge">
-                  {theme.isDark ? <Moon size={11} /> : <Sun size={11} />}
-                  <span>{theme.isDark ? '深色' : '浅色'}</span>
-                </span>
+                <div className="theme-card-badges">
+                  {isActive && (
+                    <div className="theme-card-active-pill">
+                      <Check size={11} strokeWidth={3} />
+                      <span>{themeState.mode === 'auto' ? '系统匹配' : '已选用'}</span>
+                    </div>
+                  )}
+                  <span className="theme-card-mode-badge">
+                    {theme.isDark ? <Moon size={11} /> : <Sun size={11} />}
+                    <span>{theme.isDark ? '深色' : '浅色'}</span>
+                  </span>
+                </div>
               </div>
 
               {/* Palette Swatch Preview */}

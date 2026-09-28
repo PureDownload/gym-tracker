@@ -31,9 +31,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 配置 Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: 配置 Gradle 缓存
         uses: gradle/actions/setup-gradle@v4
 

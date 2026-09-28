@@ -471,7 +471,7 @@ class StorageService {
     const bodyMetrics = await this.getBodyMetrics();
     const backupObj = {
       app: 'IronTrack',
-      version: '1.1.0',
+      version: '1.1.1',
       exportedAt: new Date().toISOString(),
       data: {
         workouts,

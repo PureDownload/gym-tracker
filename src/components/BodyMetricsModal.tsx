@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { X, Scale, Plus, Trash2, TrendingDown, TrendingUp, Check } from 'lucide-react';
+import {
+  X,
+  Scale,
+  Plus,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Minus,
+  Check,
+  Calendar,
+  Activity,
+  FileText,
+  Sparkles,
+} from 'lucide-react';
 import type { BodyMetricEntry } from '../types/workout';
 
 interface BodyMetricsModalProps {
@@ -29,6 +42,7 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
   const [thighCm, setThighCm] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [showAllHistory, setShowAllHistory] = useState<boolean>(false);
 
   if (!isSubPage && !isOpen) return null;
 
@@ -37,7 +51,7 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
     const w = parseFloat(weightKg);
     const bf = parseFloat(bodyFatPercent);
 
-    if (isNaN(w) && isNaN(bf) && !armCm && !chestCm && !waistCm) {
+    if (isNaN(w) && isNaN(bf) && !armCm && !chestCm && !waistCm && !hipsCm && !thighCm) {
       alert('请至少输入体重或一项身体围度数据');
       return;
     }
@@ -71,388 +85,425 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
       setHipsCm('');
       setThighCm('');
       setNotes('');
-    }, 1000);
+    }, 1200);
   };
 
-  // 7-day weight moving average
+  // Calculations for hero metrics
   const validWeights = bodyMetrics.filter((m) => m.weightKg != null);
+  const latestEntry = bodyMetrics.length > 0 ? bodyMetrics[0] : null;
   const latestWeight = validWeights.length > 0 ? validWeights[0].weightKg : null;
   const previousWeight = validWeights.length > 1 ? validWeights[1].weightKg : null;
   const weightDelta =
     latestWeight && previousWeight ? Math.round((latestWeight - previousWeight) * 10) / 10 : null;
 
+  const displayedHistory = showAllHistory ? bodyMetrics : bodyMetrics.slice(0, 5);
+
   const renderBody = () => (
     <>
-      {/* Summary Hero Card */}
-      {latestWeight && (
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '14px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              最新体重记录 ({validWeights[0].date})
+      {/* 1. Hero Summary Dashboard */}
+      {latestWeight != null ? (
+        <div className="metric-hero-card">
+          <div className="metric-hero-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Scale size={16} color="var(--accent-primary)" />
+              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                最新体测 · {validWeights[0].date}
+              </span>
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-              {latestWeight} <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>kg</span>
-            </div>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-muted)',
+                background: 'var(--bg-subtle)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-subtle)',
+              }}
+            >
+              已累积 {bodyMetrics.length} 次打卡
+            </span>
           </div>
 
-          {weightDelta !== null && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {weightDelta > 0 ? (
-                <span style={{ color: '#f59e0b', fontSize: '0.85rem', fontWeight: 600 }}>
-                  +{weightDelta} kg <TrendingUp size={15} style={{ verticalAlign: 'middle' }} />
+          <div className="metric-hero-val-row">
+            <div>
+              <span className="metric-hero-digits">{latestWeight}</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '4px', fontWeight: 600 }}>
+                kg
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {latestEntry?.bodyFatPercent != null && (
+                <span className="metric-chip" style={{ borderColor: 'var(--accent-primary)' }}>
+                  <Activity size={12} color="var(--accent-primary)" />
+                  体脂 <strong>{latestEntry.bodyFatPercent}%</strong>
                 </span>
-              ) : weightDelta < 0 ? (
-                <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>
-                  {weightDelta} kg <TrendingDown size={15} style={{ verticalAlign: 'middle' }} />
+              )}
+
+              {weightDelta !== null && (
+                <span
+                  className={`metric-trend-pill ${
+                    weightDelta > 0 ? 'increase' : weightDelta < 0 ? 'decrease' : 'neutral'
+                  }`}
+                >
+                  {weightDelta > 0 ? (
+                    <>
+                      <TrendingUp size={14} /> +{weightDelta} kg
+                    </>
+                  ) : weightDelta < 0 ? (
+                    <>
+                      <TrendingDown size={14} /> {weightDelta} kg
+                    </>
+                  ) : (
+                    <>
+                      <Minus size={14} /> 持平
+                    </>
+                  )}
                 </span>
-              ) : (
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>持平</span>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      ) : (
+        <div
+          className="metric-hero-card"
+          style={{ textAlign: 'center', padding: '20px 16px' }}
+        >
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '50%',
+              background: 'var(--bg-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 10px',
+              color: 'var(--accent-primary)',
+            }}
+          >
+            <Sparkles size={22} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '4px' }}>
+            开启身材与形体蜕变打卡
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', maxWidth: '280px', margin: '0 auto' }}>
+            持续记录体重与关键围度，见证每一次增肌减脂的切实蜕变！
+          </div>
         </div>
       )}
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} style={{ marginBottom: '24px' }}>
-        <div
+      {/* 2. Modern Input Form */}
+      <form onSubmit={handleSubmit} className="metric-form-card">
+        <div className="metric-form-title">
+          <Calendar size={18} color="var(--accent-primary)" />
+          <span>录入今日体测数据</span>
+        </div>
+
+        {/* Date Picker */}
+        <div className="metric-input-subgroup">
+          <label className="metric-subgroup-label">打卡日期</label>
+          <input
+            type="date"
+            className="input-field"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+            style={{ width: '100%', fontSize: '0.85rem' }}
+          />
+        </div>
+
+        {/* Core Metrics: Weight & Body Fat */}
+        <div className="metric-input-subgroup">
+          <label className="metric-subgroup-label">⚡ 核心体征</label>
+          <div className="metric-grid-2">
+            <div className="metric-field-box">
+              <label className="metric-field-label">当前体重</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="如 75.2"
+                  value={weightKg}
+                  onChange={(e) => setWeightKg(e.target.value)}
+                />
+                <span className="unit">kg</span>
+              </div>
+            </div>
+
+            <div className="metric-field-box">
+              <label className="metric-field-label">体脂率 (选填)</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="如 15.0"
+                  value={bodyFatPercent}
+                  onChange={(e) => setBodyFatPercent(e.target.value)}
+                />
+                <span className="unit">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Circumferences */}
+        <div className="metric-input-subgroup">
+          <label className="metric-subgroup-label">📏 身体关键围度 (选填)</label>
+          <div className="metric-grid-3">
+            <div className="metric-field-box">
+              <label className="metric-field-label">💪 大臂围</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="臂围"
+                  value={armCm}
+                  onChange={(e) => setArmCm(e.target.value)}
+                />
+                <span className="unit">cm</span>
+              </div>
+            </div>
+
+            <div className="metric-field-box">
+              <label className="metric-field-label">🛡️ 胸围</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="胸围"
+                  value={chestCm}
+                  onChange={(e) => setChestCm(e.target.value)}
+                />
+                <span className="unit">cm</span>
+              </div>
+            </div>
+
+            <div className="metric-field-box">
+              <label className="metric-field-label">⌛ 腰围</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="腰围"
+                  value={waistCm}
+                  onChange={(e) => setWaistCm(e.target.value)}
+                />
+                <span className="unit">cm</span>
+              </div>
+            </div>
+
+            <div className="metric-field-box">
+              <label className="metric-field-label">🍑 臀围</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="臀围"
+                  value={hipsCm}
+                  onChange={(e) => setHipsCm(e.target.value)}
+                />
+                <span className="unit">cm</span>
+              </div>
+            </div>
+
+            <div className="metric-field-box">
+              <label className="metric-field-label">🦵 大腿围</label>
+              <div className="metric-field-input-row">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="大腿"
+                  value={thighCm}
+                  onChange={(e) => setThighCm(e.target.value)}
+                />
+                <span className="unit">cm</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div className="metric-input-subgroup">
+          <label className="metric-subgroup-label">
+            <FileText size={12} />
+            打卡备注 / 感受说明 (选填)
+          </label>
+          <input
+            type="text"
+            className="input-field"
+            placeholder="如：空腹晨起称重、碳循环充碳后、状态极佳..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            style={{ width: '100%', fontSize: '0.82rem' }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="btn-primary"
           style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '12px',
-            padding: '16px',
+            width: '100%',
+            padding: '11px',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginTop: '8px',
+            boxShadow: '0 4px 14px var(--accent-primary-glow)',
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px' }}>
-            📝 录入今日体测数据
-          </div>
-
-          {/* Date Picker */}
-          <div style={{ marginBottom: '12px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.75rem',
-                color: 'var(--text-secondary)',
-                marginBottom: '4px',
-              }}
-            >
-              打卡日期
-            </label>
-            <input
-              type="date"
-              className="input-field"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          {/* Weight & Body Fat */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '12px',
-              marginBottom: '12px',
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                体重 (kg)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="如 72.5"
-                className="input-field"
-                value={weightKg}
-                onChange={(e) => setWeightKg(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                体脂率 (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="如 15.0"
-                className="input-field"
-                value={bodyFatPercent}
-                onChange={(e) => setBodyFatPercent(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Girths: Arm, Chest, Waist */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))',
-              gap: '10px',
-              marginBottom: '12px',
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                臂围 (cm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="充血/常态"
-                className="input-field"
-                value={armCm}
-                onChange={(e) => setArmCm(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                胸围 (cm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="如 102"
-                className="input-field"
-                value={chestCm}
-                onChange={(e) => setChestCm(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                腰围 (cm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="空腹腰围"
-                className="input-field"
-                value={waistCm}
-                onChange={(e) => setWaistCm(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Optional: Hips, Thigh */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-              gap: '10px',
-              marginBottom: '12px',
-            }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                臀围 (cm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="选填"
-                className="input-field"
-                value={hipsCm}
-                onChange={(e) => setHipsCm(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: '4px',
-                }}
-              >
-                大腿围 (cm)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                placeholder="选填"
-                className="input-field"
-                value={thighCm}
-                onChange={(e) => setThighCm(e.target.value)}
-                style={{ width: '100%' }}
-              />
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div style={{ marginBottom: '14px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '0.75rem',
-                color: 'var(--text-secondary)',
-                marginBottom: '4px',
-              }}
-            >
-              打卡备注 / 感受说明
-            </label>
-            <input
-              type="text"
-              placeholder="例：早起空腹称重，右臂臂围达到 38.5cm"
-              className="input-field"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn-primary"
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              backgroundColor: isSaved ? '#10b981' : undefined,
-              borderColor: isSaved ? '#10b981' : undefined,
-            }}
-          >
-            {isSaved ? <Check size={16} /> : <Plus size={16} />}
-            <span>{isSaved ? '已保存打卡数据' : '保存打卡记录'}</span>
-          </button>
-        </div>
+          {isSaved ? <Check size={18} /> : <Plus size={18} />}
+          <span>{isSaved ? '已成功保存打卡数据！' : '保存打卡记录'}</span>
+        </button>
       </form>
 
-      {/* History List */}
+      {/* 3. Modern History Timeline Log */}
       <div>
-        <div style={{ fontWeight: 700, fontSize: '0.88rem', marginBottom: '10px' }}>
-          📅 历史身材日志 ({bodyMetrics.length} 条)
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '12px',
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: '0.92rem', color: 'var(--text-primary)' }}>
+            📅 历史身材日志 ({bodyMetrics.length} 条)
+          </div>
+          {bodyMetrics.length > 5 && (
+            <button
+              type="button"
+              className="text-btn"
+              style={{ fontSize: '0.76rem', color: 'var(--accent-primary)' }}
+              onClick={() => setShowAllHistory(!showAllHistory)}
+            >
+              {showAllHistory ? '收起展示' : `查看全部 (${bodyMetrics.length})`}
+            </button>
+          )}
         </div>
 
         {bodyMetrics.length === 0 ? (
           <div
             style={{
               textAlign: 'center',
-              padding: '24px 0',
+              padding: '30px 16px',
               color: 'var(--text-secondary)',
               fontSize: '0.82rem',
               background: 'var(--bg-card)',
-              borderRadius: '12px',
-              border: '1px dashed var(--border-color)',
+              borderRadius: '14px',
+              border: '1px dashed var(--border-subtle)',
             }}
           >
-            暂无身体记录，打卡一次开始追踪你的形体蜕变吧！
+            暂无历史打卡记录，录入第一次体测开始追踪吧！
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {bodyMetrics.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '12px 14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                    {item.date}
+            {displayedHistory.map((item) => (
+              <div key={item.id} className="metric-history-card">
+                <div className="metric-history-header">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={13} color="var(--accent-primary)" />
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {item.date}
+                    </span>
                     {item.notes && (
-                      <span style={{ marginLeft: '8px', opacity: 0.8 }}>· {item.notes}</span>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '4px' }}>
-                    {item.weightKg != null && (
-                      <span style={{ fontWeight: 700, fontSize: '0.94rem' }}>
-                        {item.weightKg} kg
-                      </span>
-                    )}
-                    {item.bodyFatPercent != null && (
-                      <span style={{ color: 'var(--accent-primary)', fontSize: '0.88rem' }}>
-                        体脂 {item.bodyFatPercent}%
-                      </span>
-                    )}
-                    {item.measurements?.armCm && (
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                        臂 {item.measurements.armCm}cm
-                      </span>
-                    )}
-                    {item.measurements?.waistCm && (
-                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                        腰 {item.measurements.waistCm}cm
+                      <span
+                        style={{
+                          fontSize: '0.74rem',
+                          color: 'var(--text-secondary)',
+                          maxWidth: '180px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          marginLeft: '4px',
+                        }}
+                        title={item.notes}
+                      >
+                        · {item.notes}
                       </span>
                     )}
                   </div>
+
+                  <button
+                    type="button"
+                    className="icon-btn"
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      color: 'var(--text-muted)',
+                      border: 'none',
+                      background: 'transparent',
+                    }}
+                    title="删除此条记录"
+                    onClick={() => {
+                      if (window.confirm(`确定删除 ${item.date} 的体测记录吗？`)) {
+                        onDeleteMetric(item.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
 
-                <button
-                  className="icon-btn"
-                  style={{ color: '#ef4444', width: '28px', height: '28px' }}
-                  title="删除记录"
-                  onClick={() => onDeleteMetric(item.id)}
-                >
-                  <Trash2 size={14} />
-                </button>
+                {/* Metrics Chips Row */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {item.weightKg != null && (
+                    <span
+                      className="metric-chip"
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        borderColor: 'rgba(16, 185, 129, 0.25)',
+                      }}
+                    >
+                      <Scale size={11} color="var(--accent-primary)" />
+                      <strong>{item.weightKg}</strong> kg
+                    </span>
+                  )}
+
+                  {item.bodyFatPercent != null && (
+                    <span
+                      className="metric-chip"
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.08)',
+                        borderColor: 'rgba(56, 189, 248, 0.25)',
+                      }}
+                    >
+                      体脂 <strong>{item.bodyFatPercent}%</strong>
+                    </span>
+                  )}
+
+                  {item.measurements?.chestCm != null && (
+                    <span className="metric-chip">
+                      胸 <strong>{item.measurements.chestCm}</strong>cm
+                    </span>
+                  )}
+
+                  {item.measurements?.armCm != null && (
+                    <span className="metric-chip">
+                      臂 <strong>{item.measurements.armCm}</strong>cm
+                    </span>
+                  )}
+
+                  {item.measurements?.waistCm != null && (
+                    <span className="metric-chip">
+                      腰 <strong>{item.measurements.waistCm}</strong>cm
+                    </span>
+                  )}
+
+                  {item.measurements?.hipsCm != null && (
+                    <span className="metric-chip">
+                      臀 <strong>{item.measurements.hipsCm}</strong>cm
+                    </span>
+                  )}
+
+                  {item.measurements?.thighCm != null && (
+                    <span className="metric-chip">
+                      腿 <strong>{item.measurements.thighCm}</strong>cm
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -474,17 +525,17 @@ export const BodyMetricsModal: React.FC<BodyMetricsModalProps> = ({
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: '520px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
+        style={{ maxWidth: '480px', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
       >
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Scale size={20} color="var(--accent-primary)" />
-            <h3 className="modal-title" style={{ fontSize: '1.05rem' }}>
+            <h3 className="modal-title" style={{ fontSize: '1.05rem', fontWeight: 800 }}>
               身材与围度追踪 (Body Metrics)
             </h3>
           </div>
           {onClose && (
-            <button className="icon-btn" onClick={onClose}>
+            <button className="icon-btn" onClick={onClose} aria-label="关闭">
               <X size={18} />
             </button>
           )}

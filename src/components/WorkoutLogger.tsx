@@ -22,6 +22,7 @@ import {
   ArrowRightLeft,
   Share2,
   MoreHorizontal,
+  BookmarkPlus,
 } from 'lucide-react';
 import type {
   MuscleGroup,
@@ -873,41 +874,51 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
         </div>
 
         {/* Template Quick Launcher Bar */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <button
             type="button"
             className="btn-secondary"
             style={{
               flex: 1,
+              width: 'auto',
+              minWidth: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              padding: '6px 10px',
-              fontSize: '0.76rem',
+              padding: '7px 12px',
+              fontSize: '0.78rem',
               color: 'var(--accent-primary)',
               borderColor: 'var(--accent-primary)',
               background: 'rgba(59, 130, 246, 0.05)',
+              whiteSpace: 'nowrap',
             }}
             onClick={() => setIsTemplateModalOpen(true)}
           >
-            <Layers size={14} />
-            <span>训练计划模版库 ({templates.length}套)</span>
+            <Layers size={14} style={{ flexShrink: 0 }} />
+            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              计划模版库 ({templates.length}套)
+            </span>
           </button>
           <button
             type="button"
             className="btn-secondary"
             style={{
+              width: 'auto',
+              flexShrink: 0,
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              padding: '6px 10px',
-              fontSize: '0.74rem',
+              justifyContent: 'center',
+              gap: '5px',
+              padding: '7px 11px',
+              fontSize: '0.76rem',
+              whiteSpace: 'nowrap',
             }}
             onClick={handleSaveCurrentAsTemplate}
             title="将当前动作另存为模版"
           >
-            <span>💾 存为模版</span>
+            <BookmarkPlus size={14} style={{ flexShrink: 0, color: 'var(--accent-primary)' }} />
+            <span>存模版</span>
           </button>
         </div>
 
@@ -1591,20 +1602,40 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
           type="button"
           className="btn-secondary"
           onClick={() => handleOpenPicker(null)}
-          style={{ padding: '12px' }}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '12px 8px',
+            fontSize: '0.88rem',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+          }}
         >
-          <Plus size={18} />
-          组合下一个动作
+          <Plus size={18} style={{ flexShrink: 0 }} />
+          <span style={{ whiteSpace: 'nowrap' }}>组合下一个动作</span>
         </button>
 
         <button
           type="button"
           className="btn-primary"
           onClick={handleSave}
-          style={{ flex: 1.2, padding: '12px' }}
+          style={{
+            flex: 1.15,
+            minWidth: 0,
+            padding: '12px 10px',
+            fontSize: '0.9rem',
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+          }}
         >
-          <CheckCircle2 size={18} />
-          完成并保存训练
+          <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+          <span style={{ whiteSpace: 'nowrap' }}>完成并保存训练</span>
         </button>
       </div>
 
