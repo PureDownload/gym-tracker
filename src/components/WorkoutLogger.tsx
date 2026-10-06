@@ -33,7 +33,9 @@ import type {
   WorkoutSession,
   SetType,
   WorkoutTemplate,
+  WorkoutDraft,
 } from '../types/workout';
+import { storageService } from '../services/storage';
 import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS } from '../data/presetExercises';
 import { WarmupCalculatorModal } from './WarmupCalculatorModal';
 import { WorkoutPosterModal } from './WorkoutPosterModal';
@@ -54,7 +56,9 @@ interface WorkoutLoggerProps {
   onTogglePinExercise: (exerciseId: string) => void;
   onSaveWorkout: (workout: WorkoutSession) => void;
   onSetCompleted: () => void; // triggers rest timer
+  onDraftChange?: (draft: WorkoutDraft | null) => void;
 }
+
 
 const QUICK_TITLES = [
   '练胸日',
@@ -166,25 +170,43 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   onTogglePinExercise,
   onSaveWorkout,
   onSetCompleted,
+  onDraftChange,
 }) => {
   const allExercises = useMemo(
     () => [...PRESET_EXERCISES, ...customExercises],
     [customExercises]
   );
 
+  // 0. Load persisted draft if any
+  const savedDraft = useMemo(() => storageService.getWorkoutDraft(), []);
+
   // 1. Session Basics
-  const [workoutDate, setWorkoutDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
-  const [workoutTitle, setWorkoutTitle] = useState<string>('练胸日');
-  const [sessionNotes] = useState<string>('');
+  const [workoutDate, setWorkoutDate] = useState<string>(() => {
+    return savedDraft?.date || new Date().toISOString().split('T')[0];
+  });
+  const [workoutTitle, setWorkoutTitle] = useState<string>(() => {
+    return savedDraft?.title || '练胸日';
+  });
+  const [sessionNotes] = useState<string>(() => {
+    return savedDraft?.notes || '';
+  });
+
+  const [hasUserEdits, setHasUserEdits] = useState<boolean>(() => {
+    return Boolean(savedDraft?.hasUserEdits);
+  });
+  const [lastAutoSavedTime, setLastAutoSavedTime] = useState<string>('');
   const [savedSuccessMsg, setSavedSuccessMsg] = useState<string>('');
 
-  // 2. Real-time Workout Timer (HUD) - Default NOT running on open to give full user control
-  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
-  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(false);
+  // 2. Real-time Workout Timer (HUD)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(() => {
+    return savedDraft?.elapsedSeconds || 0;
+  });
+  const [isTimerRunning, setIsTimerRunning] = useState<boolean>(() => {
+    return Boolean(savedDraft?.isTimerRunning);
+  });
   const [isTimeEditModalOpen, setIsTimeEditModalOpen] = useState<boolean>(false);
   const [manualMinutesInput, setManualMinutesInput] = useState<string>('');
+
 
   // 3. New Advanced Modal States (Templates, Warmup, Substitute, Story Poster)
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
@@ -338,6 +360,9 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
   // 3. Current active exercises
   const [activeExercises, setActiveExercises] = useState<WorkoutExercise[]>(() => {
+    if (savedDraft && savedDraft.exercises && savedDraft.exercises.length > 0) {
+      return savedDraft.exercises;
+    }
     const defaultEx =
       allExercises.find((e) => pinnedExerciseIds.includes(e.id)) || allExercises[0];
     const isCardio = defaultEx.category === 'cardio' || defaultEx.isCardio;
@@ -373,6 +398,61 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       },
     ];
   });
+
+  // Auto-save draft debounced so progress is never lost across tabs or page reloads
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const draft: WorkoutDraft = {
+        id: 'active_draft',
+        date: workoutDate,
+        title: workoutTitle,
+        exercises: activeExercises,
+        elapsedSeconds,
+        isTimerRunning,
+        notes: sessionNotes,
+        lastModified: Date.now(),
+        hasUserEdits,
+      };
+      storageService.saveWorkoutDraft(draft);
+      onDraftChange?.(draft);
+      const d = new Date();
+      setLastAutoSavedTime(
+        `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+      );
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [
+    workoutDate,
+    workoutTitle,
+    activeExercises,
+    elapsedSeconds,
+    isTimerRunning,
+    sessionNotes,
+    hasUserEdits,
+    onDraftChange,
+  ]);
+
+  // Immediate save on page unload or background switch
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const draft: WorkoutDraft = {
+        id: 'active_draft',
+        date: workoutDate,
+        title: workoutTitle,
+        exercises: activeExercises,
+        elapsedSeconds,
+        isTimerRunning,
+        notes: sessionNotes,
+        lastModified: Date.now(),
+        hasUserEdits,
+      };
+      storageService.saveWorkoutDraft(draft);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [workoutDate, workoutTitle, activeExercises, elapsedSeconds, isTimerRunning, sessionNotes, hasUserEdits]);
+
 
   // Watch for external copy workout trigger
   useEffect(() => {
@@ -607,6 +687,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
     updated[exerciseIndex].sets.push(newSet);
     setActiveExercises(updated);
+    setHasUserEdits(true);
     // Set active row to newly created set
     setActiveRowKey(`${exerciseIndex}_${updated[exerciseIndex].sets.length - 1}`);
   };
@@ -617,6 +698,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     updated[exerciseIndex].sets.splice(setIndex, 1);
     updated[exerciseIndex].sets.forEach((s, idx) => (s.setNumber = idx + 1));
     setActiveExercises(updated);
+    setHasUserEdits(true);
     if (activeRowKey === `${exerciseIndex}_${setIndex}`) {
       setActiveRowKey(null);
     }
@@ -634,6 +716,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       [field]: val,
     };
     setActiveExercises(updated);
+    setHasUserEdits(true);
   };
 
   // Toggle set completed with auto-advancing focus and rest timer
@@ -644,6 +727,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     const newStatus = !currentSet.isCompleted;
     currentSet.isCompleted = newStatus;
     setActiveExercises(updated);
+    setHasUserEdits(true);
 
     if (newStatus) {
       onSetCompleted(); // Pop up rest timer
@@ -651,6 +735,13 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       // If timer is not running and currently at 0, start timing automatically on first set completion
       if (!isTimerRunning && elapsedSeconds === 0) {
         setIsTimerRunning(true);
+      }
+
+      // Check if all sets across all exercises are now completed
+      const allDone = updated.every((ex) => ex.sets.every((s) => s.isCompleted));
+      if (allDone) {
+        setSavedSuccessMsg('🎉 计划组已全部完成！记得点击下方「完成并保存」打卡归档哦！');
+        setTimeout(() => setSavedSuccessMsg(''), 4500);
       }
 
       // Smoothly advance focus to next set
@@ -688,6 +779,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     updated[exIdx].sets[setIdx].distanceKm = prev.distanceKm;
     updated[exIdx].sets[setIdx].type = prev.type;
     setActiveExercises(updated);
+    setHasUserEdits(true);
   };
 
   const handleRemoveExercise = (exerciseIndex: number) => {
@@ -695,6 +787,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     const updated = [...activeExercises];
     updated.splice(exerciseIndex, 1);
     setActiveExercises(updated);
+    setHasUserEdits(true);
   };
 
   const handleSave = () => {
@@ -733,7 +826,99 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
       totalSets: hudStats.totalSets,
       durationMin: sessionDurationMin,
     });
+
+    // Clear active workout draft from storage on save!
+    storageService.clearWorkoutDraft();
+    setHasUserEdits(false);
+    onDraftChange?.(null);
   };
+
+  const handleDiscardDraft = () => {
+    if (window.confirm('确定清空当前录入的所有动作和组数，放弃本场训练吗？')) {
+      storageService.clearWorkoutDraft();
+      setElapsedSeconds(0);
+      setIsTimerRunning(false);
+      setHasUserEdits(false);
+      const defaultEx =
+        allExercises.find((e) => pinnedExerciseIds.includes(e.id)) || allExercises[0];
+      const isCardio = defaultEx.category === 'cardio' || defaultEx.isCardio;
+      setActiveExercises([
+        {
+          id: 'ex_' + Date.now(),
+          exerciseId: defaultEx.id,
+          exerciseName: defaultEx.name,
+          category: defaultEx.category,
+          isCardio,
+          sets: isCardio
+            ? [
+                {
+                  id: 'set_1',
+                  setNumber: 1,
+                  weightKg: 0,
+                  reps: 0,
+                  durationMinutes: 30,
+                  distanceKm: 4.5,
+                  caloriesKcal: 250,
+                  heartRateBpm: 135,
+                  isCompleted: false,
+                  type: 'normal',
+                },
+              ]
+            : [
+                { id: 'set_1', setNumber: 1, weightKg: 20, reps: 12, isCompleted: false, type: 'warmup' },
+                { id: 'set_2', setNumber: 2, weightKg: 30, reps: 10, isCompleted: false, type: 'normal' },
+                { id: 'set_3', setNumber: 3, weightKg: 30, reps: 10, isCompleted: false, type: 'normal' },
+              ],
+        },
+      ]);
+      setSavedSuccessMsg('已清空当前训练记录并恢复初始状态');
+      setTimeout(() => setSavedSuccessMsg(''), 2500);
+      onDraftChange?.(null);
+    }
+  };
+
+  const handleFinishCelebration = () => {
+    setCelebrationData(null);
+    storageService.clearWorkoutDraft();
+    setElapsedSeconds(0);
+    setIsTimerRunning(false);
+    setHasUserEdits(false);
+    onDraftChange?.(null);
+
+    const defaultEx =
+      allExercises.find((e) => pinnedExerciseIds.includes(e.id)) || allExercises[0];
+    const isCardio = defaultEx.category === 'cardio' || defaultEx.isCardio;
+    setActiveExercises([
+      {
+        id: 'ex_' + Date.now(),
+        exerciseId: defaultEx.id,
+        exerciseName: defaultEx.name,
+        category: defaultEx.category,
+        isCardio,
+        sets: isCardio
+          ? [
+              {
+                id: 'set_1',
+                setNumber: 1,
+                weightKg: 0,
+                reps: 0,
+                durationMinutes: 30,
+                distanceKm: 4.5,
+                caloriesKcal: 250,
+                heartRateBpm: 135,
+                isCompleted: false,
+                type: 'normal',
+              },
+            ]
+          : [
+              { id: 'set_1', setNumber: 1, weightKg: 20, reps: 12, isCompleted: false, type: 'warmup' },
+              { id: 'set_2', setNumber: 2, weightKg: 30, reps: 10, isCompleted: false, type: 'normal' },
+              { id: 'set_3', setNumber: 3, weightKg: 30, reps: 10, isCompleted: false, type: 'normal' },
+            ],
+      },
+    ]);
+  };
+
 
   // Barbell Plate Calculator breakdown
   const plateBreakdown = useMemo(() => {
@@ -857,21 +1042,52 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
           2. WORKOUT TITLE & DATE PILLS (轻量快捷标题栏)
           ======================================================== */}
       <div className="card" style={{ marginBottom: '12px', padding: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               🎯 今日训练计划
             </span>
+            <span
+              className="draft-status-pill"
+              title="训练记录已在本地实时自动暂存，切换页面、刷新或退出均不丢失"
+            >
+              <span className="draft-status-dot" />
+              <span>{lastAutoSavedTime ? `已暂存 ${lastAutoSavedTime}` : '实时暂存中'}</span>
+            </span>
           </div>
-          <div style={{ width: '130px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <input
               type="date"
               value={workoutDate}
               onChange={(e) => setWorkoutDate(e.target.value)}
-              style={{ width: '100%', padding: '4px 6px', fontSize: '0.78rem' }}
+              style={{ width: '125px', padding: '4px 6px', fontSize: '0.78rem' }}
             />
+            {(hasUserEdits || hudStats.completedSets > 0 || activeExercises.length > 1) && (
+              <button
+                type="button"
+                className="btn-secondary"
+                style={{
+                  padding: '4px 8px',
+                  fontSize: '0.72rem',
+                  color: 'var(--accent-danger, #ef4444)',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  background: 'rgba(239, 68, 68, 0.05)',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                }}
+                onClick={handleDiscardDraft}
+                title="清空当前草稿并重新开始"
+              >
+                <RotateCcw size={11} />
+                <span>重置</span>
+              </button>
+            )}
           </div>
         </div>
+
 
         {/* Template Quick Launcher Bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -1620,7 +1836,11 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
         <button
           type="button"
-          className="btn-primary"
+          className={`btn-primary ${
+            hudStats.completedSets > 0 && hudStats.completedSets === hudStats.totalSets
+              ? 'btn-pulse-success'
+              : ''
+          }`}
           onClick={handleSave}
           style={{
             flex: 1.15,
@@ -1632,12 +1852,25 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
+            background:
+              hudStats.completedSets > 0 && hudStats.completedSets === hudStats.totalSets
+                ? 'linear-gradient(135deg, #10b981, #059669)'
+                : undefined,
+            boxShadow:
+              hudStats.completedSets > 0 && hudStats.completedSets === hudStats.totalSets
+                ? '0 4px 18px rgba(16, 185, 129, 0.4)'
+                : undefined,
           }}
         >
           <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
-          <span style={{ whiteSpace: 'nowrap' }}>完成并保存训练</span>
+          <span style={{ whiteSpace: 'nowrap' }}>
+            {hudStats.completedSets > 0 && hudStats.completedSets === hudStats.totalSets
+              ? '🎉 计划组全成，保存训练！'
+              : '完成并保存训练'}
+          </span>
         </button>
       </div>
+
 
       {/* ========================================================
           5. MODAL: WORKOUT TIMER ADJUSTMENT (用时调节/重置弹窗)
@@ -1960,7 +2193,7 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
                   fontSize: '0.88rem',
                 }}
                 onClick={() => {
-                  setCelebrationData(null);
+                  handleFinishCelebration();
                   setIsPosterModalOpen(true);
                 }}
               >
@@ -1973,10 +2206,11 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
               type="button"
               className="btn-primary"
               style={{ width: '100%', marginTop: '10px', padding: '12px' }}
-              onClick={() => setCelebrationData(null)}
+              onClick={handleFinishCelebration}
             >
               太棒了，完成记录！
             </button>
+
           </div>
         </div>
       )}

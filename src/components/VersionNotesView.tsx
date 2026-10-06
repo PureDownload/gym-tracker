@@ -42,13 +42,14 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
             <span className="version-badge-pill current">当前版本 v{currentVersion}</span>
             <span className="version-badge-pill">体验优化</span>
           </div>
-          <span className="version-release-date">2026 年 9 月更新</span>
+          <span className="version-release-date">2026 年 10 月更新</span>
         </div>
 
         <h1 className="version-hero-title">IronTrack 铁脉健身 v{currentVersion}</h1>
         <p className="version-hero-subtitle">
-          构建流水线优化 · 原生二级页面架构演进 · 私有云双端互通与极客工具箱
+          训练防丢保活 · 实时离线草稿 · 次日智能补录与跨页面悬浮胶囊
         </p>
+
 
         {/* Action Bar */}
         <div className="version-action-bar">
@@ -212,14 +213,29 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
         </div>
 
         <div className="version-timeline">
-          {/* v1.1.3 */}
+          {/* v1.1.4 */}
           <div className="version-timeline-item current">
             <div className="version-timeline-dot">
               <CheckCircle2 size={16} />
             </div>
             <div className="version-timeline-card">
               <div className="version-timeline-header">
-                <span className="version-timeline-ver">v1.1.3 (Current)</span>
+                <span className="version-timeline-ver">v1.1.4 (Current)</span>
+                <span className="version-timeline-tag">训练防丢与智能补录</span>
+                <span className="version-timeline-time">2026-10</span>
+              </div>
+              <p className="version-timeline-summary">
+                训练体验重大优化：训练台常驻保活，切换页面与刷新零丢失；实时离线草稿自动暂存；次日未结算训练智能弹窗与一键补录历史；跨页面浮动胶囊与收官强提醒。
+              </p>
+            </div>
+          </div>
+
+          {/* v1.1.3 */}
+          <div className="version-timeline-item">
+            <div className="version-timeline-dot" />
+            <div className="version-timeline-card">
+              <div className="version-timeline-header">
+                <span className="version-timeline-ver">v1.1.3</span>
                 <span className="version-timeline-tag">覆盖升级与签名固化</span>
                 <span className="version-timeline-time">2026-09</span>
               </div>
@@ -228,6 +244,7 @@ export const VersionNotesView: React.FC<VersionNotesViewProps> = ({
               </p>
             </div>
           </div>
+
 
           {/* v1.1.1 */}
           <div className="version-timeline-item">

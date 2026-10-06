@@ -1,4 +1,4 @@
-import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from '../types/workout';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry, WorkoutDraft } from '../types/workout';
 import { PRESET_TEMPLATES } from '../data/presetTemplates';
 
 const DB_NAME = 'IronTrackDB';
@@ -9,6 +9,7 @@ const TEMPLATES_STORE = 'templates';
 const BODY_METRICS_STORE = 'body_metrics';
 
 const LS_WORKOUTS_KEY = 'irontrack_workouts_backup';
+const LS_WORKOUT_DRAFT_KEY = 'irontrack_active_workout_draft';
 const LS_CUSTOM_EX_KEY = 'irontrack_custom_exercises';
 const LS_PINNED_EX_KEY = 'irontrack_pinned_exercises';
 const LS_TEMPLATES_KEY = 'irontrack_templates';
@@ -164,6 +165,48 @@ class StorageService {
     incoming.forEach(w => map.set(w.id, w));
     const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     await this.saveWorkoutsBulk(merged);
+  }
+
+  // Workout Draft / Active In-Progress Session
+  getWorkoutDraft(): WorkoutDraft | null {
+    return this.getFromLocalStorage<WorkoutDraft>(LS_WORKOUT_DRAFT_KEY);
+  }
+
+  saveWorkoutDraft(draft: WorkoutDraft): void {
+    this.saveToLocalStorage(LS_WORKOUT_DRAFT_KEY, draft);
+  }
+
+  clearWorkoutDraft(): void {
+    try {
+      localStorage.removeItem(LS_WORKOUT_DRAFT_KEY);
+    } catch (e) {
+      console.warn('Failed clearing draft from localStorage', e);
+    }
+  }
+
+  isDraftMeaningful(draft: WorkoutDraft | null): boolean {
+    if (!draft || !draft.exercises || draft.exercises.length === 0) return false;
+    if (draft.hasUserEdits) return true;
+
+    // Check if any set is completed
+    const hasCompletedSet = draft.exercises.some((ex) =>
+      ex.sets && ex.sets.some((s) => s.isCompleted)
+    );
+    if (hasCompletedSet) return true;
+
+    // Check if user has timed more than 45 seconds
+    if (draft.elapsedSeconds && draft.elapsedSeconds > 45) return true;
+
+    // Check if user has added multiple exercises
+    if (draft.exercises.length > 1) return true;
+
+    // Check if non-default weights or notes were entered
+    const hasCustomSets = draft.exercises.some((ex) =>
+      ex.sets && ex.sets.some((s) => (s.weightKg && s.weightKg > 30) || (s.reps && s.reps > 12) || s.durationMinutes || s.notes)
+    );
+    if (hasCustomSets) return true;
+
+    return false;
   }
 
   public async upsertCustomExercisesFromRemote(incoming: Exercise[]): Promise<void> {

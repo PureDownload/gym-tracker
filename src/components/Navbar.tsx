@@ -7,7 +7,9 @@ interface NavbarProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   hasUpdate?: boolean;
+  hasActiveWorkout?: boolean;
 }
+
 
 interface NavItem {
   id: TabType;
@@ -23,7 +25,12 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'profile', label: '我的', icon: User },
 ];
 
-export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, hasUpdate = false }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  activeTab,
+  onTabChange,
+  hasUpdate = false,
+  hasActiveWorkout = false,
+}) => {
   const [clickedTab, setClickedTab] = useState<TabType | null>(null);
   const activeIndex = Math.max(0, NAV_ITEMS.findIndex((item) => item.id === activeTab));
 
@@ -63,6 +70,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, hasUpdat
             >
               <div className="nav-icon-container">
                 <Icon size={20} className="nav-icon" />
+                {item.id === 'logger' && hasActiveWorkout && !isActive && (
+                  <span className="nav-workout-active-badge" title="当前有正在进行的训练">
+                    <span className="nav-badge-ping workout-ping" />
+                    <span className="nav-badge-dot workout-dot" />
+                  </span>
+                )}
                 {item.id === 'profile' && hasUpdate && (
                   <span className="nav-update-badge" title="有新版本更新">
                     <span className="nav-badge-ping" />
@@ -78,4 +91,5 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onTabChange, hasUpdat
     </div>
   );
 };
+
 

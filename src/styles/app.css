@@ -336,9 +336,199 @@
   }
 }
 
+/* Active Workout Dot on Navbar */
+.nav-workout-active-badge {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workout-dot {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.9) !important;
+}
+
+.workout-ping {
+  background-color: #10b981 !important;
+}
+
+/* Draft Auto-saved Pill */
+.draft-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent-secondary);
+  line-height: 1;
+}
+
+.draft-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+/* Pulse animation for Save Button when sets completed */
+@keyframes pulseSuccess {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
+  }
+}
+
+.btn-pulse-success {
+  animation: pulseSuccess 2s infinite ease-in-out;
+}
+
+/* Floating Active Workout Pill Bar (on non-logger tabs) */
+.active-workout-pill-bar {
+  position: absolute;
+  bottom: calc(74px + var(--safe-area-bottom));
+  left: 14px;
+  right: 14px;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 0 16px rgba(16, 185, 129, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  z-index: 44;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.active-workout-pill-bar:hover {
+  border-color: #10b981;
+  box-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.35);
+}
+
+.active-workout-pill-bar:active {
+  transform: scale(0.98);
+}
+
+.active-pill-pulse-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pill-dot-core {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.pill-dot-ping {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #10b981;
+  animation: badgePing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.active-pill-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.active-pill-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-pill-details {
+  font-size: 0.72rem;
+  color: var(--accent-secondary);
+  font-weight: 500;
+}
+
+.active-pill-action {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent-secondary);
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+/* App Floating Toast */
+.app-floating-toast {
+  position: absolute;
+  top: calc(64px + var(--safe-area-top));
+  left: 18px;
+  right: 18px;
+  max-width: 440px;
+  margin: 0 auto;
+  z-index: 55;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.3);
+  padding: 10px 16px;
+  border-radius: 12px;
+  color: #f8fafc;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  animation: toastSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastSlideDown {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 /* Common Card */
 .card {
   background: var(--bg-card);
+
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
   padding: 16px;

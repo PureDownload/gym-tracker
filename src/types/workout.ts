@@ -55,6 +55,19 @@ export interface WorkoutSession {
   notes?: string;
 }
 
+export interface WorkoutDraft {
+  id: string;
+  date: string; // YYYY-MM-DD
+  title: string;
+  exercises: WorkoutExercise[];
+  elapsedSeconds: number;
+  isTimerRunning?: boolean;
+  notes?: string;
+  lastModified: number;
+  hasUserEdits?: boolean;
+}
+
+
 export interface ExerciseHistoryPoint {
   date: string;
   timestamp: number;

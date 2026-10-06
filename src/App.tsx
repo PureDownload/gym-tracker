@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowUp } from 'lucide-react';
-import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from './types/workout';
+import { ArrowUp, ChevronRight } from 'lucide-react';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry, WorkoutDraft } from './types/workout';
 import type { UpdateCheckResult } from './types/update';
 import { storageService } from './services/storage';
 import { updateService } from './services/updateService';
@@ -17,6 +17,7 @@ import { TechDocsModal } from './components/TechDocsModal';
 import { UpdateModal } from './components/UpdateModal';
 import { CloudSyncModal } from './components/CloudSyncModal';
 import { BodyMetricsModal } from './components/BodyMetricsModal';
+import { UnsettledWorkoutModal } from './components/UnsettledWorkoutModal';
 import { cloudSyncService } from './services/cloudSyncService';
 import { cloudAuthService } from './services/cloudAuthService';
 import type { SyncStatusInfo } from './types/cloud';
@@ -29,6 +30,7 @@ import './styles/app.css';
 export function App() {
   const [activeTab, setActiveTab] = useState<TabType>('logger');
   const mainContentRef = useRef<HTMLElement | null>(null);
+  const loggerScrollTopRef = useRef<number>(0);
   const [showBackToTop, setShowBackToTop] = useState<boolean>(false);
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
@@ -38,11 +40,18 @@ export function App() {
   const [workoutToCopy, setWorkoutToCopy] = useState<WorkoutSession | null>(null);
   const [exerciseToAdd, setExerciseToAdd] = useState<Exercise | null>(null);
 
+  // Active workout draft tracking (for tab preservation & stale recovery)
+  const [activeDraft, setActiveDraft] = useState<WorkoutDraft | null>(() => storageService.getWorkoutDraft());
+  const [unsettledDraft, setUnsettledDraft] = useState<WorkoutDraft | null>(null);
+  const [isUnsettledModalOpen, setIsUnsettledModalOpen] = useState<boolean>(false);
+  const [bannerToast, setBannerToast] = useState<string | null>(null);
+
   const [isWideMode, setIsWideMode] = useState<boolean>(false);
   const [profileSubPage, setProfileSubPage] = useState<ProfileSubPage | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [isTechDocsModalOpen, setIsTechDocsModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
+
   const [isCloudModalOpen, setIsCloudModalOpen] = useState<boolean>(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
   const [isBodyMetricsModalOpen, setIsBodyMetricsModalOpen] = useState<boolean>(false);
@@ -109,6 +118,25 @@ export function App() {
     // 订阅主题切换
     const unsubTheme = themeService.subscribe(setThemeState);
 
+    // 检查是否有历史或昨日未结算的训练草稿
+    const draft = storageService.getWorkoutDraft();
+    if (draft && storageService.isDraftMeaningful(draft)) {
+      setActiveDraft(draft);
+      const today = new Date().toISOString().split('T')[0];
+      const isPastDate = draft.date < today;
+      const isStale = Date.now() - (draft.lastModified || 0) > 4 * 60 * 60 * 1000;
+      const completedSets = draft.exercises.reduce(
+        (acc, ex) => acc + (ex.sets ? ex.sets.filter((s) => s.isCompleted).length : 0),
+        0
+      );
+
+      // 如果是昨日遗留或超过4小时前且已有打卡记录，主动弹出智能补录提醒
+      if ((isPastDate || isStale) && completedSets > 0) {
+        setUnsettledDraft(draft);
+        setIsUnsettledModalOpen(true);
+      }
+    }
+
     return () => {
       unsubSync();
       unsubData();
@@ -116,12 +144,65 @@ export function App() {
     };
   }, []);
 
+  const handleRecoverAsHistorical = async (draft: WorkoutDraft) => {
+    const durationMin = Math.max(1, Math.round((draft.elapsedSeconds || 0) / 60));
+    const recoveredSession: WorkoutSession = {
+      id: 'session_' + (draft.lastModified || Date.now()),
+      date: draft.date,
+      title: draft.title || '训练日',
+      exercises: draft.exercises.map((ex) => ({
+        ...ex,
+        sets: ex.sets.map((s) => ({
+          ...s,
+          weightKg: Number(s.weightKg) || 0,
+          reps: Number(s.reps) || 0,
+          durationMinutes: s.durationMinutes ? Number(s.durationMinutes) : undefined,
+          distanceKm: s.distanceKm ? Number(s.distanceKm) : undefined,
+          caloriesKcal: s.caloriesKcal ? Number(s.caloriesKcal) : undefined,
+          isCompleted: true,
+        })),
+      })),
+      durationMinutes: durationMin,
+      createdAt: new Date(draft.date).getTime() || Date.now(),
+      notes: draft.notes,
+    };
+
+    await handleSaveWorkout(recoveredSession);
+    storageService.clearWorkoutDraft();
+    setActiveDraft(null);
+    setIsUnsettledModalOpen(false);
+    setBannerToast(`已成功补录 ${draft.date}「${draft.title}」训练记录！可在「历史」中查看。`);
+    setTimeout(() => setBannerToast(null), 4000);
+  };
+
+  const handleContinueUnsettledWorkout = () => {
+    setIsUnsettledModalOpen(false);
+    setActiveTab('logger');
+  };
+
+  const handleDiscardUnsettledDraft = () => {
+    storageService.clearWorkoutDraft();
+    setActiveDraft(null);
+    setIsUnsettledModalOpen(false);
+    setBannerToast('已放弃并清空该未结算训练草稿');
+    setTimeout(() => setBannerToast(null), 3000);
+  };
+
+  const isDraftActive = Boolean(activeDraft && storageService.isDraftMeaningful(activeDraft));
+  const activeDraftCompletedSets = activeDraft?.exercises
+    ? activeDraft.exercises.reduce(
+        (acc, ex) => acc + (ex.sets ? ex.sets.filter((s) => s.isCompleted).length : 0),
+        0
+      )
+    : 0;
+
   const handleSaveWorkout = async (session: WorkoutSession) => {
     await storageService.saveWorkout(session);
     setWorkouts((prev) => [session, ...prev.filter((w) => w.id !== session.id)]);
     // 后台静默推送到小主机私有云
     cloudSyncService.silentSyncOnSave(session);
   };
+
 
   const handleDeleteWorkout = async (id: string) => {
     await storageService.deleteWorkout(id);
@@ -201,15 +282,26 @@ export function App() {
     mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Reset scroll position to top whenever switching main tabs
+  // Reset scroll position to top whenever switching main tabs, or restore for logger
   useEffect(() => {
-    mainContentRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    if (activeTab === 'logger') {
+      mainContentRef.current?.scrollTo({ top: loggerScrollTopRef.current, behavior: 'instant' });
+    } else {
+      mainContentRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    }
     setShowBackToTop(false);
   }, [activeTab]);
 
   return (
     <div className="app-viewport">
       <div className={`mobile-shell ${isWideMode ? 'wide-mode' : ''}`}>
+        {/* Floating Toast Notification */}
+        {bannerToast && (
+          <div className="app-floating-toast animate-fade-in">
+            <span>{bannerToast}</span>
+          </div>
+        )}
+
         {/* App Header */}
         <Header
           syncStatus={syncStatus}
@@ -238,7 +330,11 @@ export function App() {
             </div>
           ) : (
             <>
-              {activeTab === 'logger' && (
+              {/* Keep WorkoutLogger mounted in DOM so tab switching NEVER destroys progress */}
+              <div
+                className="tab-pane-logger"
+                style={{ display: activeTab === 'logger' ? 'block' : 'none' }}
+              >
                 <WorkoutLogger
                   customExercises={customExercises}
                   workouts={workouts}
@@ -253,10 +349,12 @@ export function App() {
                   onTogglePinExercise={handleTogglePinExercise}
                   onSaveWorkout={handleSaveWorkout}
                   onSetCompleted={handleTriggerRestTimer}
+                  onDraftChange={setActiveDraft}
                 />
-              )}
+              </div>
 
               {(activeTab === 'history' || activeTab === ('calendar' as any)) && (
+
                 <WorkoutHistory
                   workouts={workouts}
                   onDeleteWorkout={handleDeleteWorkout}
@@ -338,10 +436,41 @@ export function App() {
           />
         )}
 
+        {/* Floating Active Workout Pill Bar on non-logger tabs */}
+        {activeTab !== 'logger' && isDraftActive && activeDraft && (
+          <div
+            className="active-workout-pill-bar animate-fade-in"
+            onClick={() => setActiveTab('logger')}
+            title="点击快速返回正在进行的训练"
+          >
+            <div className="active-pill-pulse-dot">
+              <span className="pill-dot-ping" />
+              <span className="pill-dot-core" />
+            </div>
+            <div className="active-pill-info">
+              <span className="active-pill-title">{activeDraft.title || '训练进行中'}</span>
+              <span className="active-pill-details">
+                {activeDraftCompletedSets > 0
+                  ? `${activeDraftCompletedSets} 组已打卡`
+                  : `${activeDraft.exercises.length} 个动作`}
+                {activeDraft.elapsedSeconds > 0 &&
+                  ` · ${Math.floor(activeDraft.elapsedSeconds / 60)}分${(activeDraft.elapsedSeconds % 60).toString().padStart(2, '0')}秒`}
+              </span>
+            </div>
+            <div className="active-pill-action">
+              <span>返回训练</span>
+              <ChevronRight size={14} />
+            </div>
+          </div>
+        )}
+
         {/* Bottom Tab Navigation */}
         <Navbar
           activeTab={activeTab}
           onTabChange={(tab) => {
+            if (activeTab === 'logger') {
+              loggerScrollTopRef.current = mainContentRef.current?.scrollTop || 0;
+            }
             setActiveTab(tab);
             if (tab !== 'profile') {
               setProfileSubPage(null);
@@ -350,6 +479,7 @@ export function App() {
           hasUpdate={Boolean(
             updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
           )}
+          hasActiveWorkout={isDraftActive}
         />
 
         {/* Local Storage & Backup Modal */}
@@ -395,9 +525,20 @@ export function App() {
           onSaveMetric={handleSaveBodyMetric}
           onDeleteMetric={handleDeleteBodyMetric}
         />
+
+        {/* Unsettled/Next-day Workout Recovery Modal */}
+        <UnsettledWorkoutModal
+          isOpen={isUnsettledModalOpen}
+          draft={unsettledDraft}
+          onRecoverAsHistorical={handleRecoverAsHistorical}
+          onContinueWorkout={handleContinueUnsettledWorkout}
+          onDiscardDraft={handleDiscardUnsettledDraft}
+          onClose={() => setIsUnsettledModalOpen(false)}
+        />
       </div>
     </div>
   );
+
 }
 
 export default App;

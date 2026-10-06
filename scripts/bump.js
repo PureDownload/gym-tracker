@@ -65,13 +65,16 @@ if (fs.existsSync(serverPkgPath)) {
 if (fs.existsSync(versionJsonPath)) {
   const vJson = JSON.parse(fs.readFileSync(versionJsonPath, 'utf-8'));
   vJson.version = nextVersion;
-  vJson.name = `IronTrack 铁脉健身 v${nextVersion}`;
+  if (!vJson.name || !vJson.name.includes(nextVersion)) {
+    vJson.name = `IronTrack 铁脉健身 v${nextVersion}`;
+  }
   vJson.apk_name = `IronTrack-v${nextVersion}.apk`;
   vJson.download_url = `https://github.com/PureDownload/gym-tracker/releases/download/v${nextVersion}/IronTrack-v${nextVersion}.apk`;
   vJson.published_at = new Date().toISOString();
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 2) + '\n', 'utf-8');
   console.log(`  ✅ 已更新 public/version.json: ${nextVersion}`);
 }
+
 
 // 4. 执行 build 与 Capacitor 同步
 console.log(`\n📦 正在自动编译前端并同步至 Android 原生工程...`);

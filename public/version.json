@@ -1,9 +1,9 @@
 {
-  "version": "1.1.3",
-  "name": "IronTrack 铁脉健身 v1.1.3 签名固化与覆盖升级增强",
-  "body": "### 🛠️ v1.1.3 签名固化与覆盖升级增强\n\n#### 1. Android 原生签名持久固化\n- **内置工程专属 Keystore**：固化 Android 签名密钥库与证书指纹，根治云端 CI 临时密钥引起的“与已安装应用签名不同”报错\n- **永久覆盖升级**：后续所有版本均保持相同签名，升级无需卸载，彻底杜绝本地健身数据丢失风险\n\n#### 2. 原生版本号动态同步机制\n- **Gradle 动态联动**：Gradle 自动绑定 package.json 版本号，动态换算语义化 versionCode（1.1.3 -> 10103）\n- **无缝覆盖安装**：确保系统安装器检测到版本号严格递增，支持 Android 手机直接点击覆盖安装\n\n#### 3. GitHub Actions 打包流水线优化\n- **版本提取修复**：修复手动触发打包时版本号硬编码兜底问题，自动读取真实发版版本\n- **产物命名标准化**：统一 Release APK 命名规范为 IronTrack-v1.1.3.apk",
-  "published_at": "2026-09-28T14:15:00Z",
-  "apk_name": "IronTrack-v1.1.3.apk",
-  "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.1.3/IronTrack-v1.1.3.apk",
+  "version": "1.1.4",
+  "name": "IronTrack 铁脉健身 v1.1.4 训练防丢与草稿智能补录",
+  "body": "### 🛡️ v1.1.4 训练防丢与草稿智能补录增强\n\n#### 1. 跨页面切换与 DOM 常驻保活\n- **训练台保活机制**：中途切换至「动作库」、「历史」或「我的」页面时，训练记录台常驻保活，数据与光标状态零丢失\n- **滚动位置自适应还原**：返回记录台时无缝还原浏览进度与填写状态\n\n#### 2. 本地草稿实时自动暂存\n- **防抖实时持久化**：组数勾选、重量及次数输入实时保存到本地离线草稿，息屏或刷新完全无感还原\n- **状态透明展示**：标题栏常驻实时暂存时间戳与清空重置操作\n\n#### 3. 次日/超时未结算智能弹窗与一键补录\n- **智能遗留检测**：跨天或离开超过 4 小时后，自动检测未结算训练记录并弹窗引导\n- **一键补录归档**：支持一键将遗留草稿按原训练日期自动结算归档至「历史」与「洞察」，彻底告别遗忘保存导致的白练烦恼\n\n#### 4. 跨页面训练进行中浮动胶囊与收官强提醒\n- **常驻浮动胶囊**：非训练页面底部常驻微缩训练卡片与呼吸脉冲灯，点击一秒直达\n- **收官打卡流光动效**：计划组全部打卡完成后按钮动态高亮并提示保存",
+  "published_at": "2026-10-06T13:33:35.488Z",
+  "apk_name": "IronTrack-v1.1.4.apk",
+  "download_url": "https://github.com/PureDownload/gym-tracker/releases/download/v1.1.4/IronTrack-v1.1.4.apk",
   "html_url": "https://github.com/PureDownload/gym-tracker/releases"
 }
