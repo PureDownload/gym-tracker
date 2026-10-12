@@ -92,6 +92,8 @@ npm run build
 详细的模块结构、数据模型与底层算法设计请查阅技术文档：
 - 📘 [技术方案与系统架构设计 (TECH_ARCHITECTURE.md)](./TECH_ARCHITECTURE.md)
 - 📘 [零 IDE 纯命令行与 GitHub 云端打包指南 (CLI_ANDROID_BUILD_GUIDE.md)](./CLI_ANDROID_BUILD_GUIDE.md)
+- 📗 [J1900 后端服务更新与维护指南 (SERVER_UPDATE_GUIDE.md)](./docs/SERVER_UPDATE_GUIDE.md)
+- 📙 [应用内版本检测与 APK 覆盖升级指南 (APP_UPDATE_GUIDE.md)](./docs/APP_UPDATE_GUIDE.md)
 
 ---
 

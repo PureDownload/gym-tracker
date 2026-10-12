@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "pack:docker": "pnpm run build && cd .. && rm -f gym-tracker-server-docker.tar.gz && tar --exclude='server/node_modules' --exclude='server/data/*.db*' --exclude='server/.DS_Store' -czvf gym-tracker-server-docker.tar.gz -s '/^server/gym-tracker-server/' server"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

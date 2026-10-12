@@ -1,18 +1,15 @@
-version: '3.8'
-
 services:
   gym-tracker-server:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    # 默认从环境变量读取阿里云 ACR 镜像，如未配置则 fallback 到本地镜像
+    image: ${SERVER_IMAGE:-gym-tracker-server:latest}
     container_name: gym-tracker-server
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${PORT:-3001}:3001"
     environment:
       - PORT=3001
       - HOST=0.0.0.0
-      - JWT_SECRET=change_this_to_your_secure_random_string_2026
+      - JWT_SECRET=${JWT_SECRET:-irontrack_secure_key_j1900_2026}
       - DATA_DIR=/app/data
       - TZ=Asia/Shanghai
     volumes:
@@ -21,3 +18,25 @@ services:
       resources:
         limits:
           memory: 256M
+    labels:
+      - "com.centurylinklabs.watchtower.scope=gym-tracker"
+
+  # 🚀 Watchtower 自动巡检镜像（零端口暴露，检测到阿里云新镜像自动拉取并重启）
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: gym-tracker-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true # 更新后自动删除旧镜像，释放 J1900 空间
+      - WATCHTOWER_POLL_INTERVAL=300 # 每 5 分钟 (300秒) 轮询一次阿里云 ACR
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_SCOPE=gym-tracker # 仅更新当前健身容器，绝不误触其他容器
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+
