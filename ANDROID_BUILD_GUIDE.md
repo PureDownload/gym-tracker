@@ -37,7 +37,7 @@ npm run cap:build
 ---
 
 #### 途径 B：纯命令行一键编译 APK（极客方式，无需启动 IDE）
-> 📖 **完整小白指南与云端自动构建**：详见专项教程 [零 IDE 纯命令行打包实战指南 (CLI_ANDROID_BUILD_GUIDE.md)](file:///Users/chunxiao/Documents/web/me/LangChainProject/gym-tracker/CLI_ANDROID_BUILD_GUIDE.md)（包含 Java / SDK 纯命令行一键环境配置与 GitHub Actions 0 安装云端打包）。
+> 📖 **完整小白指南与云端自动构建**：详见专项教程 [零 IDE 纯命令行打包实战指南 (CLI_ANDROID_BUILD_GUIDE.md)](CLI_ANDROID_BUILD_GUIDE.md)（包含 Java / SDK 纯命令行一键环境配置与 GitHub Actions 0 安装云端打包）。
 
 如果您已配置好 `ANDROID_HOME` 与 Java 环境，也可直接在项目根目录运行：
 ```bash
@@ -46,7 +46,7 @@ pnpm run build:apk
 或者进入 `android/` 目录执行 Gradle：
 
 ```bash
-cd /Users/chunxiao/Documents/web/me/LangChainProject/gym-tracker/android
+cd android  # 进入项目 android 目录
 
 # macOS / Linux:
 ./gradlew assembleDebug

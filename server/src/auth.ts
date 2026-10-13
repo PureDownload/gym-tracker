@@ -4,7 +4,10 @@ import bcrypt from 'bcryptjs';
 import { randomUUID } from 'node:crypto';
 import { db } from './db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'irontrack_j1900_secure_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'irontrack_dev_insecure_secret_key';
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ [安全警告] 未检测到环境变量 JWT_SECRET，当前使用开发默认密钥。请在 .env 文件中设置强随机密钥！');
+}
 const TOKEN_EXPIRY = '90d'; // Long-lived token for seamless gym-first experience
 
 export interface AuthUser {

@@ -9,7 +9,7 @@ services:
     environment:
       - PORT=3001
       - HOST=0.0.0.0
-      - JWT_SECRET=${JWT_SECRET:-irontrack_secure_key_j1900_2026}
+      - JWT_SECRET=${JWT_SECRET:-please_change_this_jwt_secret_in_production}
       - DATA_DIR=/app/data
       - TZ=Asia/Shanghai
     volumes:

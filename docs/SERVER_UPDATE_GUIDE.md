@@ -79,7 +79,7 @@ sequenceDiagram
 
 1. 打开终端，进入 `server` 目录：
    ```bash
-   cd /Users/chunxiao/Documents/web/me/gym-tracker/server
+   cd ~/gym-tracker/server  # 或进入你的项目 server 目录
    ```
 2. 运行打包命令：
    ```bash
@@ -91,7 +91,7 @@ sequenceDiagram
 
 3. 将新包发送至 J1900：
    ```bash
-   # 请将 <J1900_IP> 替换为小主机局域网 IP 或 Tailscale IP (例如 100.86.120.55)
+   # 请将 <J1900_IP> 替换为小主机局域网 IP 或 Tailscale IP (例如 100.64.0.10)
    scp ../gym-tracker-server-docker.tar.gz debian@<J1900_IP>:~/
    ```
 
@@ -155,7 +155,8 @@ git pull origin main
 
 ## 五、 方案 C：GitHub Actions + 镜像自动分发（高级 CI/CD）
 
-项目中已配置自动化流水线文件 [`.github/workflows/docker-server.yml`](file:///Users/chunxiao/Documents/web/me/gym-tracker/.github/workflows/docker-server.yml)。
+项目中已配置自动化流水线文件 [`.github/workflows/docker-server.yml`](../.github/workflows/docker-server.yml)。
+
 
 ### 工作原理：
 1. 每当你向 GitHub 提交 `server/` 相关的代码并推送（Push）到 `main` 分支时：

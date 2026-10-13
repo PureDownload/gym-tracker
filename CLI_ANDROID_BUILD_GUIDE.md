@@ -193,7 +193,7 @@ Android 工程需要一个 `local.properties` 文件来指引 SDK 所在位置�
 进入本工程目录，直接一条命令生成：
 
 ```bash
-cd /Users/chunxiao/Documents/web/me/LangChainProject/gym-tracker
+cd ~/gym-tracker  # 进入项目根目录
 echo "sdk.dir=$HOME/Library/Android/sdk" > android/local.properties
 ```
 

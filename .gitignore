@@ -43,3 +43,9 @@ android/app/src/main/assets/capacitor.plugins.json
 *.bak
 scratch/
 *.tar.gz
+
+# Environment variables (Secrets)
+.env
+.env.*
+server/.env
+

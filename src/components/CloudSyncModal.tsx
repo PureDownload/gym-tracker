@@ -493,7 +493,7 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
                   <input
                     type="text"
                     className="input-field"
-                    placeholder="如 http://100.86.100.12:3001 或 https://j1900.ts.net"
+                    placeholder="如 http://100.64.0.10:3001 或 https://your-server.ts.net"
                     value={serverUrl}
                     onChange={(e) => setServerUrl(e.target.value)}
                     style={{ flex: 1, padding: '10px 12px', fontSize: '0.86rem' }}

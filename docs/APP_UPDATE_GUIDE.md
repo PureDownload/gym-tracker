@@ -278,7 +278,7 @@ graph TD
 ```
 
 1. **维护静态版本元数据**：
-   在项目根目录维护 [`public/version.json`](file:///Users/chunxiao/Documents/web/me/gym-tracker/public/version.json)：
+   在项目根目录维护 [`public/version.json`](../public/version.json)：
    ```json
    {
      "version": "1.0.1",
@@ -292,7 +292,7 @@ graph TD
    - **零频次限制**：完全独立于 GitHub REST API，没有任何每小时 60 次的限制。
    - **国内直连极速**：通过 Cloudflare + Fastly 全球边缘节点加速，大陆移动蜂窝网络秒开。
 3. **客户端自动降级逻辑**：
-   在 [`updateService.ts`](file:///Users/chunxiao/Documents/web/me/gym-tracker/src/services/updateService.ts) 中捕获 `response.status === 403` 或网络超时，毫秒级静默切换至 CDN，普通用户完全感知不到任何报错，体验丝滑稳定。
+   在 [`updateService.ts`](../src/services/updateService.ts) 中捕获 `response.status === 403` 或网络超时，毫秒级静默切换至 CDN，普通用户完全感知不到任何报错，体验丝滑稳定。
 
 ---
 

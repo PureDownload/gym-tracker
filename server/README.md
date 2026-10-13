@@ -72,9 +72,10 @@ docker compose up -d --build
 在 J1900 终端执行：
 ```bash
 tailscale ip -4
-# 例如输出：100.86.120.55
+# 例如输出：100.64.0.10
 ```
-手机端 IronTrack App 中的服务器同步地址直接填写：`http://100.86.120.55:3001`
+手机端 IronTrack App 中的服务器同步地址直接填写：`http://100.64.0.10:3001` (或局域网 IP `http://192.168.x.x:3001`)
+
 
 ### 2. (推荐) 开启 Tailscale HTTPS 安全域名
 为了支持现代浏览器和移动端的安全加密连接，可直接使用 Tailscale 官方免费 HTTPS 反向代理：
