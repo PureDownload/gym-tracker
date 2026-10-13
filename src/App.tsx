@@ -357,8 +357,7 @@ export function App() {
                 />
               </div>
 
-              {(activeTab === 'history' || activeTab === ('calendar' as any)) && (
-
+              {activeTab === 'history' && (
                 <WorkoutHistory
                   workouts={workouts}
                   onDeleteWorkout={handleDeleteWorkout}

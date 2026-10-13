@@ -68,11 +68,14 @@ LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "你的J1900局域
 TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
 
 echo ""
-echo -e "${YELLOW}📌 服务访问地址:${NC}"
-echo "   局域网地址 : http://${LOCAL_IP}:3001"
+echo -e "${YELLOW}📌 服务与管理后台访问地址:${NC}"
+echo "   局域网接口 : http://${LOCAL_IP}:3001"
+echo "   PC管理后台 : http://${LOCAL_IP}:3001/admin"
 if [ -n "$TAILSCALE_IP" ]; then
     echo "   Tailscale  : http://${TAILSCALE_IP}:3001"
+    echo "   Tailscale后台: http://${TAILSCALE_IP}:3001/admin"
 fi
+
 echo ""
 echo -e "${YELLOW}🛠️ 常用运维管理命令:${NC}"
 echo "   查看实时日志: $COMPOSE logs -f"

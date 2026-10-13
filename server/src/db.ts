@@ -29,9 +29,15 @@ export function initDatabase() {
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      status TEXT NOT NULL DEFAULT 'active',
+      last_login_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
+
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+    CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
 
     CREATE TABLE IF NOT EXISTS workouts (
       id TEXT PRIMARY KEY,
@@ -94,4 +100,30 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_body_metrics_user_updated ON body_metrics(user_id, updated_at);
     CREATE INDEX IF NOT EXISTS idx_body_metrics_user_date ON body_metrics(user_id, date);
   `);
+
+  // Migrate existing users table if columns are missing
+  const tableInfo = db.prepare(`PRAGMA table_info(users)`).all() as Array<{ name: string }>;
+  const existingCols = new Set(tableInfo.map(col => col.name));
+
+  if (!existingCols.has('role')) {
+    db.exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user';`);
+  }
+  if (!existingCols.has('status')) {
+    db.exec(`ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'active';`);
+  }
+  if (!existingCols.has('last_login_at')) {
+    db.exec(`ALTER TABLE users ADD COLUMN last_login_at INTEGER;`);
+  }
+
+  // Ensure at least one admin exists if there are users
+  const adminCountRow = db.prepare(`SELECT COUNT(*) as count FROM users WHERE role = 'admin'`).get() as { count: number } | undefined;
+  const adminCount = adminCountRow?.count || 0;
+  if (adminCount === 0) {
+    const firstUser = db.prepare(`SELECT id, username FROM users ORDER BY created_at ASC LIMIT 1`).get() as { id: string; username: string } | undefined;
+    if (firstUser) {
+      db.prepare(`UPDATE users SET role = 'admin' WHERE id = ?`).run(firstUser.id);
+      console.log(`👑 [权限自举] 已自动将首位用户【${firstUser.username}】提升为系统管理员 (admin)`);
+    }
+  }
 }
+

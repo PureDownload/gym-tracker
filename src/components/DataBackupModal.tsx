@@ -38,8 +38,9 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       showMsg('success', '备份文件已成功导出并下载！');
-    } catch (e: any) {
-      showMsg('error', '导出失败: ' + e.message);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showMsg('error', '导出失败: ' + msg);
     }
   };
 
@@ -58,8 +59,9 @@ export const DataBackupModal: React.FC<DataBackupModalProps> = ({
         } else {
           showMsg('error', res.error || '导入失败');
         }
-      } catch (err: any) {
-        showMsg('error', '读取文件失败: ' + err.message);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        showMsg('error', '读取文件失败: ' + msg);
       }
     };
     reader.readAsText(file);

@@ -18,10 +18,12 @@ COPY package.json pnpm-lock.yaml* ./
 RUN pnpm config set node-linker hoisted && \
     pnpm install --no-frozen-lockfile
 
-# 拷贝源码并编译 TypeScript
+# 拷贝后端与 PC 管理端源码并编译
 COPY tsconfig.json ./
 COPY src/ ./src/
+COPY admin-web/ ./admin-web/
 RUN pnpm run build
+
 
 # 修剪开发依赖，缩减镜像体积
 RUN pnpm prune --prod

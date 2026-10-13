@@ -56,5 +56,7 @@ echo -e "${GREEN}======================================================${NC}"
 $COMPOSE ps
 
 echo ""
+echo -e "${YELLOW}📌 PC 管理后台访问地址: http://<你的J1900或Tailscale IP>:3001/admin${NC}"
 echo -e "${YELLOW}📝 检查实时日志请运行:${NC} $COMPOSE logs -f --tail 50"
 echo ""
+

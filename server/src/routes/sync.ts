@@ -7,45 +7,114 @@ export const syncRouter = Router();
 // Protect all sync routes with JWT authentication
 syncRouter.use(requireAuth);
 
+interface SyncWorkoutPayload {
+  id: string;
+  date?: string;
+  title?: string;
+  durationMinutes?: number;
+  exercises?: unknown[];
+  notes?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+interface SyncCustomExPayload {
+  id: string;
+  data?: unknown;
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+interface SyncTemplatePayload {
+  id: string;
+  name?: string;
+  category?: string;
+  description?: string;
+  exercises?: unknown[];
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+interface SyncBodyMetricPayload {
+  id: string;
+  date?: string;
+  weightKg?: number | null;
+  bodyFatPercent?: number | null;
+  measurements?: Record<string, unknown>;
+  notes?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
 interface SyncPushBody {
-  workouts?: Array<{
-    id: string;
-    date: string;
-    title: string;
-    durationMinutes?: number;
-    exercises: any[];
-    notes?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    isDeleted?: boolean;
-  }>;
-  customExercises?: Array<{
-    id: string;
-    data: any;
-    updatedAt?: number;
-    isDeleted?: boolean;
-  }>;
-  templates?: Array<{
-    id: string;
-    name: string;
-    category: string;
-    description?: string;
-    exercises: any[];
-    createdAt?: number;
-    updatedAt?: number;
-    isDeleted?: boolean;
-  }>;
-  bodyMetrics?: Array<{
-    id: string;
-    date: string;
-    weightKg?: number;
-    bodyFatPercent?: number;
-    measurements?: any;
-    notes?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    isDeleted?: boolean;
-  }>;
+  workouts?: SyncWorkoutPayload[];
+  customExercises?: SyncCustomExPayload[];
+  templates?: SyncTemplatePayload[];
+  bodyMetrics?: SyncBodyMetricPayload[];
+}
+
+interface DbWorkoutRow {
+  id: string;
+  date: string;
+  title: string;
+  duration_minutes: number | null;
+  exercises_json: string | null;
+  notes: string | null;
+  created_at: number;
+  updated_at: number;
+  is_deleted?: number;
+}
+
+interface DbCustomExRow {
+  id: string;
+  data_json: string | null;
+  created_at?: number;
+  updated_at: number;
+  is_deleted?: number;
+}
+
+interface DbTemplateRow {
+  id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  exercises_json: string | null;
+  created_at: number;
+  updated_at: number;
+  is_deleted?: number;
+}
+
+interface DbBodyMetricRow {
+  id: string;
+  date: string;
+  weight_kg: number | null;
+  body_fat_percent: number | null;
+  measurements_json: string | null;
+  notes: string | null;
+  created_at: number;
+  updated_at: number;
+  is_deleted?: number;
+}
+
+interface DbSummaryStatsRow {
+  total_workouts: number;
+  total_duration_minutes: number;
+  first_date: string | null;
+  latest_date: string | null;
+}
+
+interface ExerciseSetItem {
+  isCompleted?: boolean;
+  weightKg?: number;
+  reps?: number;
+}
+
+interface ExerciseGroupItem {
+  sets?: ExerciseSetItem[];
 }
 
 // 1. Pull incremental updates since lastSyncTime
@@ -61,7 +130,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       FROM workouts
       WHERE user_id = ? AND updated_at > ?
       ORDER BY updated_at ASC
-    `).all(userId, lastSyncTime) as any[];
+    `).all(userId, lastSyncTime) as DbWorkoutRow[];
 
     const workouts = workoutRows.map(row => ({
       id: row.id,
@@ -81,7 +150,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       FROM custom_exercises
       WHERE user_id = ? AND updated_at > ?
       ORDER BY updated_at ASC
-    `).all(userId, lastSyncTime) as any[];
+    `).all(userId, lastSyncTime) as DbCustomExRow[];
 
     const customExercises = exRows.map(row => ({
       id: row.id,
@@ -96,7 +165,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       FROM templates
       WHERE user_id = ? AND updated_at > ?
       ORDER BY updated_at ASC
-    `).all(userId, lastSyncTime) as any[];
+    `).all(userId, lastSyncTime) as DbTemplateRow[];
 
     const templates = templateRows.map(row => ({
       id: row.id,
@@ -115,7 +184,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       FROM body_metrics
       WHERE user_id = ? AND updated_at > ?
       ORDER BY updated_at ASC
-    `).all(userId, lastSyncTime) as any[];
+    `).all(userId, lastSyncTime) as DbBodyMetricRow[];
 
     const bodyMetrics = metricRows.map(row => ({
       id: row.id,
@@ -137,16 +206,17 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       templates,
       bodyMetrics,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     console.error('Error in /api/sync/pull:', err);
-    res.status(500).json({ error: '拉取云端数据失败: ' + err.message });
+    res.status(500).json({ error: '拉取云端数据失败: ' + errorMsg });
   }
 });
 
 // 2. Push client updates to server (upsert with Last-Write-Wins conflict resolution)
 syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
-  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = req.body as SyncPushBody;
+  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = (req.body || {}) as SyncPushBody;
   const now = Date.now();
 
   try {
@@ -233,7 +303,7 @@ syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
       for (const ex of customExercises) {
         if (!ex.id) continue;
         const updatedAt = ex.updatedAt || now;
-        const createdAt = now;
+        const createdAt = ex.createdAt || now;
         upsertCustomExStmt.run({
           id: ex.id,
           userId,
@@ -292,16 +362,17 @@ syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
       serverTime: now,
       ...result,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     console.error('Error in /api/sync/push:', err);
-    res.status(500).json({ error: '推送数据到小主机失败: ' + err.message });
+    res.status(500).json({ error: '推送数据到小主机失败: ' + errorMsg });
   }
 });
 
 // 3. Migrate all local data to cloud (One-click initial upload)
 syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
-  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = req.body;
+  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = (req.body || {}) as SyncPushBody;
   const now = Date.now();
 
   try {
@@ -380,7 +451,7 @@ syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
         insertEx.run(
           ex.id,
           userId,
-          JSON.stringify(ex),
+          JSON.stringify(ex.data || ex),
           now,
           now
         );
@@ -429,9 +500,10 @@ syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
       serverTime: now,
       ...result,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
     console.error('Error in /api/sync/migrate:', err);
-    res.status(500).json({ error: '迁移本地数据失败: ' + err.message });
+    res.status(500).json({ error: '迁移本地数据失败: ' + errorMsg });
   }
 });
 
@@ -444,7 +516,7 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
       FROM workouts
       WHERE user_id = ? AND is_deleted = 0
       ORDER BY date DESC, created_at DESC
-    `).all(userId) as any[]).map(row => ({
+    `).all(userId) as DbWorkoutRow[]).map(row => ({
       id: row.id,
       date: row.date,
       title: row.title,
@@ -459,7 +531,7 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
       SELECT id, data_json, updated_at
       FROM custom_exercises
       WHERE user_id = ? AND is_deleted = 0
-    `).all(userId) as any[]).map(row => ({
+    `).all(userId) as DbCustomExRow[]).map(row => ({
       id: row.id,
       ...JSON.parse(row.data_json || '{}'),
       updatedAt: row.updated_at,
@@ -470,7 +542,7 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
       FROM templates
       WHERE user_id = ? AND is_deleted = 0
       ORDER BY updated_at DESC
-    `).all(userId) as any[]).map(row => ({
+    `).all(userId) as DbTemplateRow[]).map(row => ({
       id: row.id,
       name: row.name,
       category: row.category,
@@ -485,7 +557,7 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
       FROM body_metrics
       WHERE user_id = ? AND is_deleted = 0
       ORDER BY date DESC
-    `).all(userId) as any[]).map(row => ({
+    `).all(userId) as DbBodyMetricRow[]).map(row => ({
       id: row.id,
       date: row.date,
       weightKg: row.weight_kg != null ? Number(row.weight_kg) : undefined,
@@ -508,8 +580,9 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
         bodyMetrics,
       },
     });
-  } catch (err: any) {
-    res.status(500).json({ error: '导出云端备份失败: ' + err.message });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: '导出云端备份失败: ' + errorMsg });
   }
 });
 
@@ -525,26 +598,30 @@ syncRouter.get('/summary', (req: AuthenticatedRequest, res) => {
         MAX(date) as latest_date
       FROM workouts
       WHERE user_id = ? AND is_deleted = 0
-    `).get(userId) as any;
+    `).get(userId) as DbSummaryStatsRow | undefined;
 
     const rows = db.prepare(`
       SELECT exercises_json
       FROM workouts
       WHERE user_id = ? AND is_deleted = 0
-    `).all(userId) as any[];
+    `).all(userId) as Array<{ exercises_json: string | null }>;
 
     let totalVolumeKg = 0;
     let totalSets = 0;
 
     for (const r of rows) {
-      const exList = JSON.parse(r.exercises_json || '[]');
-      for (const ex of exList) {
-        for (const s of (ex.sets || [])) {
-          if (s.isCompleted) {
-            totalSets++;
-            totalVolumeKg += (s.weightKg || 0) * (s.reps || 0);
+      try {
+        const exList: ExerciseGroupItem[] = JSON.parse(r.exercises_json || '[]');
+        for (const ex of exList) {
+          for (const s of (ex.sets || [])) {
+            if (s.isCompleted) {
+              totalSets++;
+              totalVolumeKg += (s.weightKg || 0) * (s.reps || 0);
+            }
           }
         }
+      } catch (err) {
+        console.warn('[sync/summary] Failed parsing workout exercises JSON:', err);
       }
     }
 
@@ -560,8 +637,8 @@ syncRouter.get('/summary', (req: AuthenticatedRequest, res) => {
         latestWorkoutDate: totalRow?.latest_date || null,
       },
     });
-  } catch (err: any) {
-    res.status(500).json({ error: '获取云端数据统计失败: ' + err.message });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: '获取云端数据统计失败: ' + errorMsg });
   }
 });
-

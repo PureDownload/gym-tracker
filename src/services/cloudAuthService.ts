@@ -82,10 +82,13 @@ class CloudAuthService {
         return { success: true, latencyMs };
       }
       return { success: false, latencyMs, error: `服务器返回状态码: ${res.status}` };
-    } catch (err: any) {
+    } catch (err: unknown) {
       const latencyMs = Math.round(performance.now() - start);
-      let msg = err.message || '连接失败';
-      if (err.name === 'AbortError') {
+      const isErrorObj = err instanceof Error;
+      const isAbort = isErrorObj && err.name === 'AbortError';
+      const rawMsg = isErrorObj ? err.message : String(err);
+      let msg = rawMsg || '连接失败';
+      if (isAbort) {
         msg = '连接超时（请检查手机是否已开启 Tailscale 且小主机已上线）';
       } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
         msg = '无法访问服务器（请确认小主机 IP 及端口无误，或检查 Tailscale 组网）';

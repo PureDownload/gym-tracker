@@ -3,7 +3,10 @@ export type StorageMode = 'local_only' | 'cloud_sync';
 export interface CloudUser {
   id: string;
   username: string;
+  role?: 'admin' | 'user';
+  status?: string;
 }
+
 
 export interface CloudConfig {
   mode: StorageMode;

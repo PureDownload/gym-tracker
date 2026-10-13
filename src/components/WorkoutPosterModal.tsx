@@ -261,8 +261,8 @@ export const WorkoutPosterModal: React.FC<WorkoutPosterModalProps> = ({
     if (!canvas) return;
     try {
       canvas.toBlob(async (blob) => {
-        if (blob && (navigator.clipboard as any)?.write) {
-          await (navigator.clipboard as any).write([
+        if (blob && typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.write === 'function') {
+          await navigator.clipboard.write([
             new ClipboardItem({ 'image/png': blob }),
           ]);
           setCopied(true);
@@ -272,6 +272,7 @@ export const WorkoutPosterModal: React.FC<WorkoutPosterModalProps> = ({
         }
       });
     } catch (e) {
+      console.warn('Failed copying poster image to clipboard, fallback to download:', e);
       handleDownload();
     }
   };

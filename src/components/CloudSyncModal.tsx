@@ -192,7 +192,9 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
       try {
         localStorage.setItem(LS_LAST_SERVER_URL, serverUrl.trim());
         localStorage.setItem(LS_LAST_USERNAME, username.trim());
-      } catch {}
+      } catch (storageErr) {
+        console.warn('Failed saving last server url / username to localStorage:', storageErr);
+      }
 
       const updatedCfg = cloudAuthService.getConfig();
       setConfig(updatedCfg);
@@ -201,8 +203,9 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
       // Auto trigger sync after login
       await cloudSyncService.sync();
       onDataChanged();
-    } catch (err: any) {
-      showFeedback('error', err.message || '操作失败');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      showFeedback('error', msg || '操作失败');
       // Intentionally DO NOT clear password or username so the user doesn't have to re-type
     } finally {
       setIsSubmittingAuth(false);
@@ -435,7 +438,22 @@ export const CloudSyncModal: React.FC<CloudSyncModalProps> = ({
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>登录用户: </span>
                 <strong style={{ color: 'var(--text-main)' }}>{config.user?.username}</strong>
+                {config.user?.role === 'admin' && (
+                  <span style={{
+                    marginLeft: '6px',
+                    fontSize: '0.68rem',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(168, 85, 247, 0.2)',
+                    color: '#c084fc',
+                    border: '1px solid rgba(168, 85, 247, 0.4)',
+                    fontWeight: 700,
+                  }}>
+                    👑 管理员
+                  </span>
+                )}
               </div>
+
               <div>
                 <span style={{ color: 'var(--text-muted)' }}>上次同步: </span>
                 <strong style={{ color: 'var(--text-main)' }}>

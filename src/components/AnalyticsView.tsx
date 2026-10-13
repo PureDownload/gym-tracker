@@ -11,9 +11,9 @@ import {
   Scale,
   Plus,
 } from 'lucide-react';
-import type { WorkoutSession, Exercise, MuscleGroup, BodyMetricEntry } from '../types/workout';
+import type { WorkoutSession, Exercise, MuscleGroup, BodyMetricEntry, ExerciseHistoryPoint } from '../types/workout';
 import { PRESET_EXERCISES, MUSCLE_GROUP_LABELS } from '../data/presetExercises';
-import { analyticsService } from '../services/analytics';
+import { analyticsService, type HeatmapDay } from '../services/analytics';
 import { evaluateStrengthProfile, STRENGTH_RANK_META } from '../services/strengthStandards';
 import { storageService } from '../services/storage';
 
@@ -27,6 +27,13 @@ interface AnalyticsViewProps {
 type SubTab = 'overview' | 'single' | 'standards' | 'body_metrics';
 type StrengthMetric = 'maxWeight' | 'estimated1RM' | 'totalVolume';
 type CardioMetric = 'durationMinutes' | 'distanceKm' | 'caloriesKcal';
+
+interface ChartPoint {
+  x: number;
+  y: number;
+  point: ExerciseHistoryPoint;
+  value: number;
+}
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   workouts,
@@ -77,7 +84,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     [workouts]
   );
 
-  const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<any | null>(null);
+  const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<HeatmapDay | null>(null);
 
   // =========================================================
   // 2. MICRO SINGLE EXERCISE EVOLUTION (单动作超负荷分析)
@@ -98,7 +105,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
 
   const [strengthMetric, setStrengthMetric] = useState<StrengthMetric>('estimated1RM');
   const [cardioMetric, setCardioMetric] = useState<CardioMetric>('durationMinutes');
-  const [activeHoverPoint, setActiveHoverPoint] = useState<any | null>(null);
+  const [activeHoverPoint, setActiveHoverPoint] = useState<ChartPoint | null>(null);
 
   const analysis = analyticsService.analyzeProgressiveOverload(
     selectedExercise.id,
@@ -122,7 +129,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   const innerWidth = chartWidth - paddingLeft - paddingRight;
   const innerHeight = chartHeight - paddingTop - paddingBottom;
 
-  const getMetricValue = (p: any) => {
+  const getMetricValue = (p: ExerciseHistoryPoint): number => {
     if (isCardio) {
       if (cardioMetric === 'durationMinutes') return p.durationMinutes;
       if (cardioMetric === 'distanceKm') return p.distanceKm;

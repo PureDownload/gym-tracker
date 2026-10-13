@@ -204,7 +204,7 @@ class UpdateService {
       this.cachedResult = result;
       this.lastCheckTime = now;
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
 
       // 异常情况下尝试 CDN 容灾兜底
@@ -215,12 +215,14 @@ class UpdateService {
           this.lastCheckTime = now;
           return fallback;
         }
-      } catch {
-        // ignore
+      } catch (fallbackErr) {
+        console.debug('Update check fallback CDN also failed:', fallbackErr);
       }
 
-      const isAbort = err.name === 'AbortError';
-      const errorMsg = isAbort ? '检查更新超时，请检查网络连接' : (err.message || '无法获取更新信息');
+      const isErrorObj = err instanceof Error;
+      const isAbort = isErrorObj && err.name === 'AbortError';
+      const rawMsg = isErrorObj ? err.message : String(err);
+      const errorMsg = isAbort ? '检查更新超时，请检查网络连接' : (rawMsg || '无法获取更新信息');
 
       return {
         hasUpdate: false,

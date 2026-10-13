@@ -17,6 +17,13 @@ const LS_BODY_METRICS_KEY = 'irontrack_body_metrics';
 const LS_USER_PROFILE_KEY = 'irontrack_user_profile';
 const LS_PENDING_QUEUE_KEY = 'irontrack_pending_sync_queue';
 
+export type PendingSyncPayload =
+  | WorkoutSession
+  | WorkoutTemplate
+  | BodyMetricEntry
+  | { id: string }
+  | Record<string, unknown>;
+
 export interface PendingSyncItem {
   type:
     | 'upsert_workout'
@@ -25,7 +32,7 @@ export interface PendingSyncItem {
     | 'delete_template'
     | 'upsert_body_metric'
     | 'delete_body_metric';
-  payload: any;
+  payload: PendingSyncPayload;
   timestamp: number;
 }
 
@@ -243,6 +250,7 @@ class StorageService {
         req.onerror = () => reject(req.error);
       });
     } catch (e) {
+      console.warn('Fallback to LocalStorage for getCustomExercises', e);
       return this.getFromLocalStorage<Exercise[]>(LS_CUSTOM_EX_KEY) || [];
     }
   }
@@ -339,6 +347,7 @@ class StorageService {
         req.onerror = () => reject(req.error);
       });
     } catch (e) {
+      console.warn('Fallback to LocalStorage for getTemplates', e);
       const local = this.getFromLocalStorage<WorkoutTemplate[]>(LS_TEMPLATES_KEY);
       return local && local.length > 0 ? local : [...PRESET_TEMPLATES];
     }
@@ -428,6 +437,7 @@ class StorageService {
         req.onerror = () => reject(req.error);
       });
     } catch (e) {
+      console.warn('Fallback to LocalStorage for getBodyMetrics', e);
       const local = this.getFromLocalStorage<BodyMetricEntry[]>(LS_BODY_METRICS_KEY) || [];
       return local.sort((a, b) => b.date.localeCompare(a.date));
     }
@@ -553,8 +563,10 @@ class StorageService {
       }
 
       return { success: true, count: workouts.length };
-    } catch (err: any) {
-      return { success: false, count: 0, error: err.message || '解析 JSON 失败' };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn('Failed parsing import JSON', err);
+      return { success: false, count: 0, error: msg || '解析 JSON 失败' };
     }
   }
 
@@ -582,11 +594,12 @@ class StorageService {
       const raw = localStorage.getItem(key);
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
+      console.warn(`Failed parsing localStorage item for key "${key}"`, e);
       return null;
     }
   }
 
-  private saveToLocalStorage(key: string, val: any): void {
+  private saveToLocalStorage(key: string, val: unknown): void {
     try {
       localStorage.setItem(key, JSON.stringify(val));
     } catch (e) {
@@ -765,7 +778,7 @@ class StorageService {
     const queue = this.getPendingSyncQueue();
     // Deduplicate if same workout ID already in queue
     const filtered = queue.filter(
-      (q) => !(q.type === item.type && q.payload?.id === item.payload?.id)
+      (q) => !(q.type === item.type && (q.payload as { id?: string })?.id === (item.payload as { id?: string })?.id)
     );
     filtered.push(item);
     this.saveToLocalStorage(LS_PENDING_QUEUE_KEY, filtered);

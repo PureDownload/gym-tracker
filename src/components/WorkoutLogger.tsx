@@ -238,13 +238,15 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
   }, []);
 
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isTimerRunning) {
       interval = setInterval(() => {
         setElapsedSeconds((prev) => prev + 1);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isTimerRunning]);
 
   const formatElapsed = (secs: number) => {
@@ -704,11 +706,11 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
     }
   };
 
-  const handleUpdateSet = (
+  const handleUpdateSet = <K extends keyof WorkoutSet>(
     exerciseIndex: number,
     setIndex: number,
-    field: keyof WorkoutSet,
-    val: any
+    field: K,
+    val: WorkoutSet[K]
   ) => {
     const updated = [...activeExercises];
     updated[exerciseIndex].sets[setIndex] = {

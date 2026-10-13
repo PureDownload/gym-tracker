@@ -1,10 +1,34 @@
-import type { WorkoutSession, Exercise } from '../types/workout';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from '../types/workout';
 import type { SyncStatusInfo, SyncState } from '../types/cloud';
 import { cloudAuthService } from './cloudAuthService';
 import { storageService } from './storage';
 
 type SyncListener = (info: SyncStatusInfo) => void;
 type DataChangeCallback = () => void;
+
+interface RemoteWorkoutItem {
+  id: string;
+  date: string;
+  title: string;
+  durationMinutes?: number;
+  exercises?: WorkoutSession['exercises'];
+  notes?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
+interface RemoteCustomExItem extends Exercise {
+  isDeleted?: boolean;
+}
+
+interface RemoteTemplateItem extends WorkoutTemplate {
+  isDeleted?: boolean;
+}
+
+interface RemoteBodyMetricItem extends BodyMetricEntry {
+  isDeleted?: boolean;
+}
 
 class CloudSyncService {
   private listeners = new Set<SyncListener>();
@@ -131,10 +155,10 @@ class CloudSyncService {
       }
 
       const pullData = await pullRes.json();
-      const remoteWorkouts: any[] = pullData.workouts || [];
-      const remoteCustomExercises: any[] = pullData.customExercises || [];
-      const remoteTemplates: any[] = pullData.templates || [];
-      const remoteBodyMetrics: any[] = pullData.bodyMetrics || [];
+      const remoteWorkouts: RemoteWorkoutItem[] = pullData.workouts || [];
+      const remoteCustomExercises: RemoteCustomExItem[] = pullData.customExercises || [];
+      const remoteTemplates: RemoteTemplateItem[] = pullData.templates || [];
+      const remoteBodyMetrics: RemoteBodyMetricItem[] = pullData.bodyMetrics || [];
 
       let hasLocalChanges = false;
 
@@ -153,7 +177,7 @@ class CloudSyncService {
               durationMinutes: rw.durationMinutes,
               exercises: rw.exercises || [],
               notes: rw.notes,
-              createdAt: rw.createdAt,
+              createdAt: rw.createdAt || Date.now(),
             });
             hasLocalChanges = true;
           }
@@ -182,7 +206,7 @@ class CloudSyncService {
 
       // Apply pulled templates
       if (remoteTemplates.length > 0) {
-        const toUpsertT: any[] = [];
+        const toUpsertT: WorkoutTemplate[] = [];
         for (const rt of remoteTemplates) {
           if (rt.isDeleted) {
             await storageService.deleteTemplate(rt.id);
@@ -199,7 +223,7 @@ class CloudSyncService {
 
       // Apply pulled body metrics
       if (remoteBodyMetrics.length > 0) {
-        const toUpsertBM: any[] = [];
+        const toUpsertBM: BodyMetricEntry[] = [];
         for (const rbm of remoteBodyMetrics) {
           if (rbm.isDeleted) {
             await storageService.deleteBodyMetric(rbm.id);
@@ -272,19 +296,22 @@ class CloudSyncService {
         pulledWorkouts: remoteWorkouts.length,
         pushedWorkouts: localWorkouts.length,
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('Sync failed:', err);
-      const isNetworkError = err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError') || err.name === 'AbortError';
+      const isErrorObj = err instanceof Error;
+      const errMsg = isErrorObj ? err.message : String(err);
+      const isAbort = isErrorObj && err.name === 'AbortError';
+      const isNetworkError = errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || isAbort;
       const state: SyncState = isNetworkError ? 'offline_pending' : 'error';
       this.setStatus({
         state,
-        errorMessage: isNetworkError ? '小主机连接暂时中断，数据已在本地妥善保存' : err.message,
+        errorMessage: isNetworkError ? '小主机连接暂时中断，数据已在本地妥善保存' : errMsg,
       });
       return {
         success: false,
         pulledWorkouts: 0,
         pushedWorkouts: 0,
-        error: err.message || '同步遇到异常',
+        error: errMsg || '同步遇到异常',
       };
     } finally {
       this.isSyncing = false;
@@ -331,6 +358,7 @@ class CloudSyncService {
         });
       }
     } catch (e) {
+      console.warn('[CloudSync] Silent sync on save failed, saving to offline queue:', e);
       // Offline fallback: save to persistent queue
       storageService.enqueuePendingSync({
         type: 'upsert_workout',
@@ -376,6 +404,7 @@ class CloudSyncService {
         this.setStatus({ state: 'offline_pending', pendingCount: storageService.getPendingSyncQueue().length });
       }
     } catch (e) {
+      console.warn('[CloudSync] Silent sync on delete failed, saving to offline queue:', e);
       storageService.enqueuePendingSync({
         type: 'delete_workout',
         payload: { id },
@@ -399,9 +428,10 @@ class CloudSyncService {
       const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
       const workoutsPayload = queue.map((item) => {
         if (item.type === 'delete_workout') {
-          return { id: item.payload.id, isDeleted: true, updatedAt: item.timestamp };
+          const payload = item.payload as { id: string };
+          return { id: payload.id, isDeleted: true, updatedAt: item.timestamp };
         }
-        return { ...item.payload, updatedAt: item.timestamp };
+        return { ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp };
       });
 
       const res = await fetch(`${serverUrl}/api/sync/push`, {
@@ -420,12 +450,12 @@ class CloudSyncService {
         this.setStatus({ state: 'online', pendingCount: 0 });
       }
     } catch (e) {
-      // Still offline, will retry next time
+      console.debug('[CloudSync] Pending queue flush failed, will retry on next connect:', e);
     }
   }
 
   // Silent sync helper for template save
-  public async silentSyncOnSaveTemplate(template: any): Promise<void> {
+  public async silentSyncOnSaveTemplate(template: WorkoutTemplate): Promise<void> {
     const config = cloudAuthService.getConfig();
     if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) return;
     try {
@@ -441,6 +471,7 @@ class CloudSyncService {
         }),
       });
     } catch (e) {
+      console.warn('[CloudSync] Silent sync on template save failed, enqueued:', e);
       storageService.enqueuePendingSync({
         type: 'upsert_template',
         payload: template,
@@ -450,7 +481,7 @@ class CloudSyncService {
   }
 
   // Silent sync helper for body metric save
-  public async silentSyncOnSaveBodyMetric(metric: any): Promise<void> {
+  public async silentSyncOnSaveBodyMetric(metric: BodyMetricEntry): Promise<void> {
     const config = cloudAuthService.getConfig();
     if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) return;
     try {
@@ -466,6 +497,7 @@ class CloudSyncService {
         }),
       });
     } catch (e) {
+      console.warn('[CloudSync] Silent sync on body metric save failed, enqueued:', e);
       storageService.enqueuePendingSync({
         type: 'upsert_body_metric',
         payload: metric,
@@ -506,8 +538,10 @@ class CloudSyncService {
       this.setStatus({ state: 'online', lastSyncTime: data.serverTime || Date.now(), pendingCount: 0 });
 
       return { success: true, count: data.workoutsMigrated || workouts.length };
-    } catch (err: any) {
-      return { success: false, count: 0, error: err.message || '上传数据失败' };
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.warn('Migration to cloud failed:', err);
+      return { success: false, count: 0, error: errorMsg || '上传数据失败' };
     }
   }
 }
