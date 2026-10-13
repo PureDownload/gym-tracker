@@ -63,8 +63,10 @@ export function App() {
   const [timerKey, setTimerKey] = useState<number>(Date.now());
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (isInitial = false) => {
+    if (isInitial) {
+      setIsLoading(true);
+    }
     try {
       const loadedWorkouts = await storageService.getWorkouts();
       const loadedCustom = await storageService.getCustomExercises();
@@ -79,7 +81,9 @@ export function App() {
     } catch (e) {
       console.error('Failed to load initial data', e);
     } finally {
-      setIsLoading(false);
+      if (isInitial) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -96,7 +100,7 @@ export function App() {
   };
 
   useEffect(() => {
-    loadData();
+    loadData(true);
 
     // 订阅云端同步状态
     const unsubSync = cloudSyncService.subscribe(setSyncStatus);
@@ -480,6 +484,7 @@ export function App() {
             updateData?.hasUpdate && !updateService.isVersionIgnored(updateData.latestVersion)
           )}
           hasActiveWorkout={isDraftActive}
+          isHidden={Boolean(profileSubPage)}
         />
 
         {/* Local Storage & Backup Modal */}

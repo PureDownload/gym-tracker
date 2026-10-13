@@ -8,6 +8,7 @@ interface NavbarProps {
   onTabChange: (tab: TabType) => void;
   hasUpdate?: boolean;
   hasActiveWorkout?: boolean;
+  isHidden?: boolean;
 }
 
 
@@ -30,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onTabChange,
   hasUpdate = false,
   hasActiveWorkout = false,
+  isHidden = false,
 }) => {
   const [clickedTab, setClickedTab] = useState<TabType | null>(null);
   const activeIndex = Math.max(0, NAV_ITEMS.findIndex((item) => item.id === activeTab));
@@ -44,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <div className="bottom-nav-wrapper">
+    <div className={`bottom-nav-wrapper ${isHidden ? 'hidden' : ''}`}>
       <nav className="bottom-nav" role="navigation" aria-label="底部导航">
         {/* Sliding Fluid Indicator Pill */}
         <div
