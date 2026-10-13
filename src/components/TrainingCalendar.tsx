@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Flame, Calendar, Activity, Copy, Check, X, Dumbbell } from 'lucide-react';
-import type { WorkoutSession } from '../types/workout';
+import { ChevronDown, ChevronUp, Flame, Calendar, Activity, Copy, Check, X, Dumbbell, Droplets } from 'lucide-react';
+import type { WorkoutSession, DailyHabitEntry } from '../types/workout';
 import { analyticsService } from '../services/analytics';
 import { MUSCLE_GROUP_LABELS } from '../data/presetExercises';
 
 interface TrainingCalendarProps {
   workouts: WorkoutSession[];
-  onCopyWorkoutToLogger: (session: WorkoutSession) => void;
+  onCopyWorkoutToLogger?: (session: WorkoutSession) => void;
+  dailyHabits?: DailyHabitEntry[];
 }
 
 interface MonthGroup {
@@ -23,6 +24,7 @@ interface MonthGroup {
 export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
   workouts,
   onCopyWorkoutToLogger,
+  dailyHabits,
 }) => {
   const today = new Date();
   const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -38,6 +40,27 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Group workouts by Month (YYYY-MM)
+  // Map for habits lookup: dateStr -> DailyHabitEntry
+  const dayHabitsMap = React.useMemo(() => {
+    const map: Record<string, DailyHabitEntry> = {};
+    if (!dailyHabits) return map;
+    for (const h of dailyHabits) {
+      if (h.date && !h.isDeleted) {
+        map[h.date] = h;
+      }
+    }
+    return map;
+  }, [dailyHabits]);
+
+  // Helper to determine if habit is completed on date
+  const isHabitAchieved = (entry?: DailyHabitEntry) => {
+    if (!entry || !entry.records) return false;
+    const waterCompleted = Boolean(entry.records['water']?.completed || (entry.records['water']?.value || 0) >= 1500);
+    const supplementCompleted = Object.entries(entry.records).some(
+      ([key, item]) => key !== 'water' && item?.completed
+    );
+    return waterCompleted || supplementCompleted;
+  };
   const monthGroups: MonthGroup[] = React.useMemo(() => {
     const map: Record<string, WorkoutSession[]> = {};
 
@@ -116,9 +139,11 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
     : [];
 
   const handleCopy = (session: WorkoutSession) => {
-    onCopyWorkoutToLogger(session);
-    setCopiedId(session.id);
-    setTimeout(() => setCopiedId(null), 2000);
+    if (onCopyWorkoutToLogger) {
+      onCopyWorkoutToLogger(session);
+      setCopiedId(session.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   return (
@@ -232,11 +257,13 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                 >
                   {matrix.map((dayNum, idx) => {
                     if (dayNum === null) {
-                      return <div key={`empty_${idx}`} style={{ height: '44px' }} />;
+                      return <div key={`empty_${idx}`} style={{ height: '46px' }} />;
                     }
 
                     const dateStr = `${mg.year}-${String(mg.month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
                     const hasTrained = !!dayWorkoutsMap[dateStr];
+                    const habitEntry = dayHabitsMap[dateStr];
+                    const hasHabitDone = isHabitAchieved(habitEntry);
                     const isToday = dateStr === todayStr;
                     const daySessions = dayWorkoutsMap[dateStr] || [];
 
@@ -249,11 +276,15 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                           borderRadius: '8px',
                           background: hasTrained
                             ? 'linear-gradient(135deg, var(--accent-primary-glow), var(--accent-cyan-glow))'
+                            : hasHabitDone
+                            ? 'rgba(6, 182, 212, 0.08)'
                             : 'var(--bg-input)',
                           border: isToday
                             ? '2px solid var(--accent-cyan)'
                             : hasTrained
                             ? '1px solid var(--accent-primary)'
+                            : hasHabitDone
+                            ? '1px solid rgba(6, 182, 212, 0.4)'
                             : '1px solid var(--border-subtle)',
                           display: 'flex',
                           flexDirection: 'column',
@@ -262,40 +293,61 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                           cursor: 'pointer',
                           position: 'relative',
                           transition: 'all 0.15s ease',
-                          boxShadow: hasTrained ? '0 0 8px var(--accent-primary-glow)' : 'none',
+                          boxShadow: hasTrained
+                            ? '0 0 8px var(--accent-primary-glow)'
+                            : hasHabitDone
+                            ? '0 0 6px rgba(6, 182, 212, 0.2)'
+                            : 'none',
                         }}
                       >
                         <span
                           style={{
                             fontSize: '0.82rem',
-                            fontWeight: isToday || hasTrained ? 800 : 500,
+                            fontWeight: isToday || hasTrained || hasHabitDone ? 800 : 500,
                             color: isToday
                               ? 'var(--accent-cyan)'
                               : hasTrained
                               ? 'var(--text-primary)'
+                              : hasHabitDone
+                              ? 'var(--accent-cyan)'
                               : 'var(--text-secondary)',
                           }}
                         >
                           {dayNum}
                         </span>
 
-                        {hasTrained && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginTop: '1px' }}>
+                        {/* 双色打卡状态指示点 (绿点: 力量训练，青点: 习惯/补剂打卡) */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', marginTop: '2px', minHeight: '6px' }}>
+                          {hasTrained && (
                             <div
+                              title="已完成力量训练"
                               style={{
                                 width: '5px',
                                 height: '5px',
                                 borderRadius: '50%',
                                 backgroundColor: 'var(--accent-primary)',
+                                boxShadow: '0 0 4px var(--accent-primary)',
                               }}
                             />
-                            {daySessions.length > 1 && (
-                              <span style={{ fontSize: '0.58rem', color: 'var(--accent-primary)' }}>
-                                {daySessions.length}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                          )}
+                          {hasHabitDone && (
+                            <div
+                              title="已完成习惯/补剂打卡"
+                              style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                backgroundColor: 'var(--accent-cyan)',
+                                boxShadow: '0 0 4px var(--accent-cyan)',
+                              }}
+                            />
+                          )}
+                          {hasTrained && daySessions.length > 1 && (
+                            <span style={{ fontSize: '0.58rem', color: 'var(--accent-primary)', marginLeft: '1px' }}>
+                              {daySessions.length}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -311,19 +363,25 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                     borderTop: '1px solid var(--border-subtle)',
                     fontSize: '0.72rem',
                     color: 'var(--text-muted)',
+                    flexWrap: 'wrap',
+                    gap: '8px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--accent-primary)' }} />
-                      训练日
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
+                      力量训练 (绿点)
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: 'var(--bg-input)' }} />
-                      休息日
+                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-cyan)' }} />
+                      习惯/补剂 (青点)
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ width: '6px', height: '6px', borderRadius: '2px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)' }} />
+                      休息/未打卡
                     </span>
                   </div>
-                  <span>点击任意日期查看训练详情</span>
+                  <span>点击任意日期查看详情</span>
                 </div>
               </div>
             )}
@@ -350,12 +408,70 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
             </div>
 
             <div className="modal-body smooth-scroll">
+              {/* 习惯与补剂打卡展示 */}
+              {selectedDate && dayHabitsMap[selectedDate] && (
+                <div
+                  style={{
+                    marginBottom: '14px',
+                    padding: '12px',
+                    background: 'rgba(6, 182, 212, 0.08)',
+                    border: '1px solid rgba(6, 182, 212, 0.25)',
+                    borderRadius: '10px',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.86rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                      <Droplets size={15} />
+                      <span>日常习惯与补剂打卡</span>
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      饮水: {dayHabitsMap[selectedDate].records?.['water']?.value || 0} ml
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {Object.entries(dayHabitsMap[selectedDate].records || {})
+                      .filter(([k]) => k !== 'water')
+                      .map(([k, rec]) => {
+                        const habitNames: Record<string, string> = {
+                          creatine: '一水肌酸',
+                          magnesium: '甘氨酸镁',
+                          fish_oil: '鱼油',
+                          vitamin_b: '复合维生素B',
+                          liquid_calcium: '液体钙',
+                        };
+                        const name = habitNames[k] || k;
+                        return (
+                          <span
+                            key={k}
+                            style={{
+                              fontSize: '0.72rem',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              background: rec.completed ? 'rgba(34, 197, 94, 0.18)' : 'var(--bg-input)',
+                              color: rec.completed ? 'var(--accent-primary)' : 'var(--text-muted)',
+                              border: rec.completed ? '1px solid rgba(34, 197, 94, 0.35)' : '1px solid var(--border-subtle)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontWeight: rec.completed ? 700 : 500,
+                            }}
+                          >
+                            {rec.completed ? <Check size={11} strokeWidth={3} /> : null}
+                            {name}
+                          </span>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
               {selectedDateWorkouts.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-secondary)' }}>
                   <Dumbbell size={36} style={{ margin: '0 auto 10px', opacity: 0.3 }} />
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>该日为休息日 (Rest Day)</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>该日无力量训练记录</div>
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    适当休息能让肌纤维超量恢复与生长。如需补录，可在“记训练”中将日期切换为此日并保存。
+                    适当休息能让肌纤维超量恢复与生长。
                   </p>
                 </div>
               ) : (
@@ -392,29 +508,31 @@ export const TrainingCalendar: React.FC<TrainingCalendarProps> = ({
                           </div>
                         </div>
 
-                        <button
-                          className="btn-secondary"
-                          style={{
-                            width: 'auto',
-                            padding: '6px 10px',
-                            fontSize: '0.74rem',
-                            color: 'var(--accent-cyan)',
-                          }}
-                          onClick={() => handleCopy(session)}
-                          title="一键把该日参数复制到记录界面"
-                        >
-                          {copiedId === session.id ? (
-                            <>
-                              <Check size={13} color="var(--accent-primary)" />
-                              <span>已复制到记录</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={13} />
-                              <span>复制到今天练</span>
-                            </>
-                          )}
-                        </button>
+                        {onCopyWorkoutToLogger && (
+                          <button
+                            className="btn-secondary"
+                            style={{
+                              width: 'auto',
+                              padding: '6px 10px',
+                              fontSize: '0.74rem',
+                              color: 'var(--accent-cyan)',
+                            }}
+                            onClick={() => handleCopy(session)}
+                            title="一键把该日参数复制到记录界面"
+                          >
+                            {copiedId === session.id ? (
+                              <>
+                                <Check size={13} color="var(--accent-primary)" />
+                                <span>已复制到记录</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={13} />
+                                <span>复制到今天练</span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
 
                       {/* Exercises in Session */}

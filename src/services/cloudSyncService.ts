@@ -1,4 +1,4 @@
-import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry } from '../types/workout';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry, DailyHabitEntry } from '../types/workout';
 import type { SyncStatusInfo, SyncState } from '../types/cloud';
 import { cloudAuthService } from './cloudAuthService';
 import { storageService } from './storage';
@@ -27,6 +27,10 @@ interface RemoteTemplateItem extends WorkoutTemplate {
 }
 
 interface RemoteBodyMetricItem extends BodyMetricEntry {
+  isDeleted?: boolean;
+}
+
+interface RemoteDailyHabitItem extends DailyHabitEntry {
   isDeleted?: boolean;
 }
 
@@ -159,6 +163,7 @@ class CloudSyncService {
       const remoteCustomExercises: RemoteCustomExItem[] = pullData.customExercises || [];
       const remoteTemplates: RemoteTemplateItem[] = pullData.templates || [];
       const remoteBodyMetrics: RemoteBodyMetricItem[] = pullData.bodyMetrics || [];
+      const remoteDailyHabits: RemoteDailyHabitItem[] = pullData.dailyHabits || [];
 
       let hasLocalChanges = false;
 
@@ -238,11 +243,29 @@ class CloudSyncService {
         }
       }
 
+      // Apply pulled daily habits
+      if (remoteDailyHabits.length > 0) {
+        const toUpsertH: DailyHabitEntry[] = [];
+        for (const rh of remoteDailyHabits) {
+          if (rh.isDeleted) {
+            await storageService.deleteDailyHabit(rh.id, false);
+            hasLocalChanges = true;
+          } else {
+            toUpsertH.push(rh);
+            hasLocalChanges = true;
+          }
+        }
+        if (toUpsertH.length > 0) {
+          await storageService.upsertDailyHabitsFromRemote(toUpsertH);
+        }
+      }
+
       // 2. Push local items to server
       const localWorkouts = await storageService.getWorkouts();
       const localCustomExercises = await storageService.getCustomExercises();
       const localTemplates = await storageService.getTemplates();
       const localBodyMetrics = await storageService.getBodyMetrics();
+      const localDailyHabits = await storageService.getDailyHabits();
 
       const pushRes = await fetch(`${serverUrl}/api/sync/push`, {
         method: 'POST',
@@ -267,6 +290,10 @@ class CloudSyncService {
           bodyMetrics: localBodyMetrics.map(bm => ({
             ...bm,
             updatedAt: bm.updatedAt || Date.now(),
+          })),
+          dailyHabits: localDailyHabits.map(h => ({
+            ...h,
+            updatedAt: h.updatedAt || Date.now(),
           })),
         }),
       });
@@ -426,12 +453,33 @@ class CloudSyncService {
 
     try {
       const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
-      const workoutsPayload = queue.map((item) => {
+      const workoutsPayload: Record<string, unknown>[] = [];
+      const templatesPayload: Record<string, unknown>[] = [];
+      const bodyMetricsPayload: Record<string, unknown>[] = [];
+      const dailyHabitsPayload: Record<string, unknown>[] = [];
+
+      queue.forEach((item) => {
         if (item.type === 'delete_workout') {
           const payload = item.payload as { id: string };
-          return { id: payload.id, isDeleted: true, updatedAt: item.timestamp };
+          workoutsPayload.push({ id: payload.id, isDeleted: true, updatedAt: item.timestamp });
+        } else if (item.type === 'upsert_workout') {
+          workoutsPayload.push({ ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp });
+        } else if (item.type === 'delete_template') {
+          const payload = item.payload as { id: string };
+          templatesPayload.push({ id: payload.id, isDeleted: true, updatedAt: item.timestamp });
+        } else if (item.type === 'upsert_template') {
+          templatesPayload.push({ ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp });
+        } else if (item.type === 'delete_body_metric') {
+          const payload = item.payload as { id: string };
+          bodyMetricsPayload.push({ id: payload.id, isDeleted: true, updatedAt: item.timestamp });
+        } else if (item.type === 'upsert_body_metric') {
+          bodyMetricsPayload.push({ ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp });
+        } else if (item.type === 'delete_daily_habit') {
+          const payload = item.payload as { id: string };
+          dailyHabitsPayload.push({ id: payload.id, isDeleted: true, updatedAt: item.timestamp });
+        } else if (item.type === 'upsert_daily_habit') {
+          dailyHabitsPayload.push({ ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp });
         }
-        return { ...(item.payload as Record<string, unknown>), updatedAt: item.timestamp };
       });
 
       const res = await fetch(`${serverUrl}/api/sync/push`, {
@@ -440,7 +488,12 @@ class CloudSyncService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.token}`,
         },
-        body: JSON.stringify({ workouts: workoutsPayload }),
+        body: JSON.stringify({
+          workouts: workoutsPayload,
+          templates: templatesPayload,
+          bodyMetrics: bodyMetricsPayload,
+          dailyHabits: dailyHabitsPayload,
+        }),
       });
 
       if (res.ok) {
@@ -506,6 +559,45 @@ class CloudSyncService {
     }
   }
 
+  // Silent sync helper for daily habit check-in save
+  public async silentSyncOnSaveHabit(entry: DailyHabitEntry): Promise<void> {
+    const config = cloudAuthService.getConfig();
+    if (config.mode !== 'cloud_sync' || !config.serverUrl || !config.token) return;
+    try {
+      const serverUrl = cloudAuthService.normalizeUrl(config.serverUrl);
+      const res = await fetch(`${serverUrl}/api/sync/push`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.token}`,
+        },
+        body: JSON.stringify({
+          dailyHabits: [{ ...entry, updatedAt: Date.now() }],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        cloudAuthService.saveConfig({ lastSyncTime: data.serverTime || Date.now() });
+        this.setStatus({ state: 'online', lastSyncTime: Date.now(), pendingCount: storageService.getPendingSyncQueue().length });
+      } else {
+        storageService.enqueuePendingSync({
+          type: 'upsert_daily_habit',
+          payload: entry,
+          timestamp: Date.now(),
+        });
+        this.setStatus({ state: 'offline_pending', pendingCount: storageService.getPendingSyncQueue().length });
+      }
+    } catch (e) {
+      console.warn('[CloudSync] Silent sync on habit save failed, enqueued:', e);
+      storageService.enqueuePendingSync({
+        type: 'upsert_daily_habit',
+        payload: entry,
+        timestamp: Date.now(),
+      });
+      this.setStatus({ state: 'offline_pending', pendingCount: storageService.getPendingSyncQueue().length });
+    }
+  }
+
   // Migrate all local IndexedDB data to J1900
   public async migrateLocalToServer(): Promise<{ success: boolean; count: number; error?: string }> {
     const config = cloudAuthService.getConfig();
@@ -519,6 +611,7 @@ class CloudSyncService {
       const customExercises = await storageService.getCustomExercises();
       const templates = await storageService.getTemplates();
       const bodyMetrics = await storageService.getBodyMetrics();
+      const dailyHabits = await storageService.getDailyHabits();
 
       const res = await fetch(`${serverUrl}/api/sync/migrate`, {
         method: 'POST',
@@ -526,7 +619,7 @@ class CloudSyncService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.token}`,
         },
-        body: JSON.stringify({ workouts, customExercises, templates, bodyMetrics }),
+        body: JSON.stringify({ workouts, customExercises, templates, bodyMetrics, dailyHabits }),
       });
 
       const data = await res.json();

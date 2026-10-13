@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Cloud, RefreshCw, User } from 'lucide-react';
+import { Flame, Cloud, RefreshCw, User, Monitor } from 'lucide-react';
 import type { SyncStatusInfo } from '../types/cloud';
 
 interface HeaderProps {
@@ -7,6 +7,7 @@ interface HeaderProps {
   hasUpdate?: boolean;
   onNavigateToProfile?: () => void;
   onOpenCloudModal?: () => void;
+  onSwitchToDeskMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -14,6 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   hasUpdate = false,
   onNavigateToProfile,
   onOpenCloudModal,
+  onSwitchToDeskMode,
 }) => {
   return (
     <header className="app-header">
@@ -28,6 +30,18 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Desk Mode Quick Switch */}
+        {onSwitchToDeskMode && (
+          <button
+            type="button"
+            className="header-profile-btn"
+            onClick={onSwitchToDeskMode}
+            title="切换为工位专注工作台 (喝水/补剂/无打扰)"
+            style={{ color: '#06b6d4' }}
+          >
+            <Monitor size={16} />
+          </button>
+        )}
         {/* Subtle Cloud Sync Status Pill */}
         {syncStatus && (
           <button

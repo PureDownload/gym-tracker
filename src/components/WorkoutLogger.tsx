@@ -41,6 +41,7 @@ import { WarmupCalculatorModal } from './WarmupCalculatorModal';
 import { WorkoutPosterModal } from './WorkoutPosterModal';
 import { TemplateManagerModal } from './TemplateManagerModal';
 import { ExerciseSubstituteModal } from './ExerciseSubstituteModal';
+import { DailyHabitCard } from './DailyHabitCard';
 
 interface WorkoutLoggerProps {
   customExercises: Exercise[];
@@ -946,6 +947,9 @@ export const WorkoutLogger: React.FC<WorkoutLoggerProps> = ({
 
   return (
     <div className="animate-fade-in">
+      {/* 习惯与补剂每日打卡微卡片 */}
+      <DailyHabitCard />
+
       {/* ========================================================
           1. IMMERSIVE WORKOUT HUD DASHBOARD (实时训练抬头看板)
           ======================================================== */}

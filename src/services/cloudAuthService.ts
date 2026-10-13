@@ -13,6 +13,7 @@ const DEFAULT_CONFIG: CloudConfig = {
 
 class CloudAuthService {
   private config: CloudConfig;
+  private listeners: Set<(config: CloudConfig) => void> = new Set();
 
   constructor() {
     this.config = this.loadConfig();
@@ -34,6 +35,13 @@ class CloudAuthService {
     return { ...this.config };
   }
 
+  public subscribe(listener: (config: CloudConfig) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
   public saveConfig(updates: Partial<CloudConfig>): CloudConfig {
     this.config = { ...this.config, ...updates };
     try {
@@ -41,7 +49,15 @@ class CloudAuthService {
     } catch (e) {
       console.warn('Failed saving cloud config to localStorage', e);
     }
-    return this.getConfig();
+    const latest = this.getConfig();
+    this.listeners.forEach((fn) => {
+      try {
+        fn(latest);
+      } catch (err) {
+        console.warn('Listener error in cloudAuthService', err);
+      }
+    });
+    return latest;
   }
 
   public isCloudModeActive(): boolean {

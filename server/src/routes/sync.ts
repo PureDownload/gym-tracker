@@ -50,11 +50,31 @@ interface SyncBodyMetricPayload {
   isDeleted?: boolean;
 }
 
+interface SyncDailyHabitPayload {
+  id: string;
+  date?: string;
+  records?: Record<string, unknown>;
+  notes?: string;
+  createdAt?: number;
+  updatedAt?: number;
+  isDeleted?: boolean;
+}
+
 interface SyncPushBody {
   workouts?: SyncWorkoutPayload[];
   customExercises?: SyncCustomExPayload[];
   templates?: SyncTemplatePayload[];
   bodyMetrics?: SyncBodyMetricPayload[];
+  dailyHabits?: SyncDailyHabitPayload[];
+}
+
+interface DbDailyHabitRow {
+  id: string;
+  date: string;
+  data_json: string;
+  created_at: number;
+  updated_at: number;
+  is_deleted?: number;
 }
 
 interface DbWorkoutRow {
@@ -198,6 +218,27 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       isDeleted: Boolean(row.is_deleted),
     }));
 
+    // Fetch updated daily habits
+    const habitRows = db.prepare(`
+      SELECT id, date, data_json, created_at, updated_at, is_deleted
+      FROM daily_habits
+      WHERE user_id = ? AND updated_at > ?
+      ORDER BY updated_at ASC
+    `).all(userId, lastSyncTime) as DbDailyHabitRow[];
+
+    const dailyHabits = habitRows.map(row => {
+      const data = JSON.parse(row.data_json || '{}');
+      return {
+        id: row.id,
+        date: row.date,
+        records: data.records || {},
+        notes: data.notes || '',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        isDeleted: Boolean(row.is_deleted),
+      };
+    });
+
     res.json({
       success: true,
       serverTime: now,
@@ -205,6 +246,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
       customExercises,
       templates,
       bodyMetrics,
+      dailyHabits,
     });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
@@ -216,7 +258,7 @@ syncRouter.post('/pull', (req: AuthenticatedRequest, res) => {
 // 2. Push client updates to server (upsert with Last-Write-Wins conflict resolution)
 syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
-  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = (req.body || {}) as SyncPushBody;
+  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [], dailyHabits = [] } = (req.body || {}) as SyncPushBody;
   const now = Date.now();
 
   try {
@@ -274,12 +316,25 @@ syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
       WHERE excluded.updated_at >= body_metrics.updated_at
     `);
 
+    const upsertDailyHabitStmt = db.prepare(`
+      INSERT INTO daily_habits (id, user_id, date, data_json, created_at, updated_at, is_deleted)
+      VALUES (@id, @userId, @date, @dataJson, @createdAt, @updatedAt, @isDeleted)
+      ON CONFLICT(id) DO UPDATE SET
+        date = excluded.date,
+        data_json = excluded.data_json,
+        created_at = excluded.created_at,
+        updated_at = excluded.updated_at,
+        is_deleted = excluded.is_deleted
+      WHERE excluded.updated_at >= daily_habits.updated_at
+    `);
+
     // Execute in a single fast transaction
     const pushTransaction = db.transaction(() => {
       let workoutsPushed = 0;
       let exercisesPushed = 0;
       let templatesPushed = 0;
       let bodyMetricsPushed = 0;
+      let dailyHabitsPushed = 0;
 
       for (const w of workouts) {
         if (!w.id) continue;
@@ -352,7 +407,23 @@ syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
         bodyMetricsPushed++;
       }
 
-      return { workoutsPushed, exercisesPushed, templatesPushed, bodyMetricsPushed };
+      for (const dh of dailyHabits) {
+        if (!dh.id) continue;
+        const updatedAt = dh.updatedAt || now;
+        const createdAt = dh.createdAt || now;
+        upsertDailyHabitStmt.run({
+          id: dh.id,
+          userId,
+          date: dh.date || new Date(createdAt).toISOString().split('T')[0],
+          dataJson: JSON.stringify({ records: dh.records || {}, notes: dh.notes || '' }),
+          createdAt,
+          updatedAt,
+          isDeleted: dh.isDeleted ? 1 : 0,
+        });
+        dailyHabitsPushed++;
+      }
+
+      return { workoutsPushed, exercisesPushed, templatesPushed, bodyMetricsPushed, dailyHabitsPushed };
     });
 
     const result = pushTransaction();
@@ -372,7 +443,7 @@ syncRouter.post('/push', (req: AuthenticatedRequest, res) => {
 // 3. Migrate all local data to cloud (One-click initial upload)
 syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
   const userId = req.user!.id;
-  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [] } = (req.body || {}) as SyncPushBody;
+  const { workouts = [], customExercises = [], templates = [], bodyMetrics = [], dailyHabits = [] } = (req.body || {}) as SyncPushBody;
   const now = Date.now();
 
   try {
@@ -423,11 +494,22 @@ syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
         is_deleted = 0
     `);
 
+    const insertDailyHabit = db.prepare(`
+      INSERT INTO daily_habits (id, user_id, date, data_json, created_at, updated_at, is_deleted)
+      VALUES (?, ?, ?, ?, ?, ?, 0)
+      ON CONFLICT(id) DO UPDATE SET
+        date = excluded.date,
+        data_json = excluded.data_json,
+        updated_at = excluded.updated_at,
+        is_deleted = 0
+    `);
+
     const migrateTx = db.transaction(() => {
       let wCount = 0;
       let eCount = 0;
       let tCount = 0;
       let bCount = 0;
+      let hCount = 0;
 
       for (const w of workouts) {
         if (!w.id) continue;
@@ -489,14 +571,33 @@ syncRouter.post('/migrate', (req: AuthenticatedRequest, res) => {
         bCount++;
       }
 
-      return { workoutsMigrated: wCount, exercisesMigrated: eCount, templatesMigrated: tCount, bodyMetricsMigrated: bCount };
+      for (const dh of dailyHabits) {
+        if (!dh.id) continue;
+        insertDailyHabit.run(
+          dh.id,
+          userId,
+          dh.date || new Date().toISOString().split('T')[0],
+          JSON.stringify({ records: dh.records || {}, notes: dh.notes || '' }),
+          dh.createdAt || now,
+          now
+        );
+        hCount++;
+      }
+
+      return {
+        workoutsMigrated: wCount,
+        exercisesMigrated: eCount,
+        templatesMigrated: tCount,
+        bodyMetricsMigrated: bCount,
+        dailyHabitsMigrated: hCount,
+      };
     });
 
     const result = migrateTx();
 
     res.json({
       success: true,
-      message: `成功迁移 ${result.workoutsMigrated} 条训练记录、${result.exercisesMigrated} 个动作、${result.templatesMigrated} 个模版与 ${result.bodyMetricsMigrated} 条身材记录`,
+      message: `成功迁移 ${result.workoutsMigrated} 条训练记录、${result.exercisesMigrated} 个动作、${result.templatesMigrated} 个模版、${result.bodyMetricsMigrated} 条身材记录与 ${result.dailyHabitsMigrated} 条习惯打卡`,
       serverTime: now,
       ...result,
     });
@@ -568,9 +669,26 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
       updatedAt: row.updated_at,
     }));
 
+    const dailyHabits = (db.prepare(`
+      SELECT id, date, data_json, created_at, updated_at
+      FROM daily_habits
+      WHERE user_id = ? AND is_deleted = 0
+      ORDER BY date DESC
+    `).all(userId) as DbDailyHabitRow[]).map(row => {
+      const data = JSON.parse(row.data_json || '{}');
+      return {
+        id: row.id,
+        date: row.date,
+        records: data.records || {},
+        notes: data.notes || '',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    });
+
     res.json({
       app: 'IronTrack',
-      version: '1.1.0',
+      version: '1.2.0',
       exportedAt: new Date().toISOString(),
       source: 'J1900-Cloud',
       data: {
@@ -578,6 +696,7 @@ syncRouter.get('/backup', (req: AuthenticatedRequest, res) => {
         customExercises,
         templates,
         bodyMetrics,
+        dailyHabits,
       },
     });
   } catch (err: unknown) {

@@ -96,7 +96,7 @@ const targetAdminDist = fs.existsSync(adminDistPath) ? adminDistPath : (fs.exist
 
 if (targetAdminDist) {
   app.use('/admin', express.static(targetAdminDist));
-  app.get('/admin/*', (req, res) => {
+  app.get(['/admin', '/admin/*'], (req, res) => {
     res.sendFile(path.join(targetAdminDist, 'index.html'));
   });
   app.get('/', (req, res) => {

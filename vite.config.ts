@@ -27,6 +27,13 @@ function injectSwVersionPlugin(version: string): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   base: './',
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    alias: {
+      react: path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+    },
+  },
   plugins: [react(), injectSwVersionPlugin(pkg.version || '1.0.0')],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version || '1.0.0'),

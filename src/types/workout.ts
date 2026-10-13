@@ -195,3 +195,38 @@ export interface StrengthProfile {
   overallRankLabel: string;
 }
 
+// -------------------------------------------------------------
+// Daily Habits & Health Check-in Types (习惯与补剂打卡)
+// -------------------------------------------------------------
+export type HabitType = 'counter' | 'boolean';
+
+export interface HabitItemConfig {
+  id: string;              // 唯一标识，例如 'water', 'creatine', 'fish_oil', 'multivitamin'
+  name: string;            // 展示名称
+  category?: 'hydration' | 'supplement' | 'nutrition' | 'other';
+  type: HabitType;         // 'counter' (累加型数值) 或 'boolean' (开关/完成)
+  targetValue: number;     // 目标值，喝水如 2500，肌酸如 1 (次) 或 5 (g)
+  unit: string;            // 单位，如 'ml', '次', 'g'
+  stepPresets?: number[];  // 快捷微调胶囊，如 [200, 300, 500]
+  icon: string;            // 图标名称 (如 'Droplets', 'Zap', 'Pill', 'Sparkles')
+  color: string;           // 强调色 (如 '#06b6d4', '#22c55e', '#a855f7')
+  sortOrder: number;
+  isEnabled: boolean;
+}
+
+export interface HabitRecordItem {
+  value: number;           // 当前值 (如 1800 ml，或 1 表示已打卡)
+  completed: boolean;      // 是否达成目标
+  updatedAt: number;       // 最后更新时间戳
+}
+
+export interface DailyHabitEntry {
+  id: string;              // 主键：'habit_YYYY-MM-DD'
+  date: string;            // 日期 'YYYY-MM-DD'
+  records: Record<string, HabitRecordItem>; // { [habitId]: HabitRecordItem }
+  notes?: string;          // 可选每日习惯随笔
+  createdAt: number;
+  updatedAt: number;
+  isDeleted?: boolean;
+}
+

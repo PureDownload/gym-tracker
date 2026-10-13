@@ -1,12 +1,14 @@
-import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry, WorkoutDraft } from '../types/workout';
+import type { WorkoutSession, Exercise, WorkoutTemplate, BodyMetricEntry, WorkoutDraft, DailyHabitEntry, HabitItemConfig } from '../types/workout';
 import { PRESET_TEMPLATES } from '../data/presetTemplates';
+import { DEFAULT_HABIT_CONFIGS } from '../data/defaultHabits';
 
 const DB_NAME = 'IronTrackDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const WORKOUTS_STORE = 'workouts';
 const CUSTOM_EXERCISES_STORE = 'custom_exercises';
 const TEMPLATES_STORE = 'templates';
 const BODY_METRICS_STORE = 'body_metrics';
+const DAILY_HABITS_STORE = 'daily_habits';
 
 const LS_WORKOUTS_KEY = 'irontrack_workouts_backup';
 const LS_WORKOUT_DRAFT_KEY = 'irontrack_active_workout_draft';
@@ -14,6 +16,8 @@ const LS_CUSTOM_EX_KEY = 'irontrack_custom_exercises';
 const LS_PINNED_EX_KEY = 'irontrack_pinned_exercises';
 const LS_TEMPLATES_KEY = 'irontrack_templates';
 const LS_BODY_METRICS_KEY = 'irontrack_body_metrics';
+const LS_DAILY_HABITS_KEY = 'irontrack_daily_habits';
+const LS_HABIT_CONFIGS_KEY = 'irontrack_habit_configs';
 const LS_USER_PROFILE_KEY = 'irontrack_user_profile';
 const LS_PENDING_QUEUE_KEY = 'irontrack_pending_sync_queue';
 
@@ -21,6 +25,7 @@ export type PendingSyncPayload =
   | WorkoutSession
   | WorkoutTemplate
   | BodyMetricEntry
+  | DailyHabitEntry
   | { id: string }
   | Record<string, unknown>;
 
@@ -31,7 +36,9 @@ export interface PendingSyncItem {
     | 'upsert_template'
     | 'delete_template'
     | 'upsert_body_metric'
-    | 'delete_body_metric';
+    | 'delete_body_metric'
+    | 'upsert_daily_habit'
+    | 'delete_daily_habit';
   payload: PendingSyncPayload;
   timestamp: number;
 }
@@ -63,6 +70,9 @@ class StorageService {
         }
         if (!db.objectStoreNames.contains(BODY_METRICS_STORE)) {
           db.createObjectStore(BODY_METRICS_STORE, { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains(DAILY_HABITS_STORE)) {
+          db.createObjectStore(DAILY_HABITS_STORE, { keyPath: 'id' });
         }
       };
 
@@ -516,21 +526,148 @@ class StorageService {
     this.saveToLocalStorage(LS_USER_PROFILE_KEY, profile);
   }
 
+  // ==========================================
+  // Daily Habits & Health Check-in (习惯打卡)
+  // ==========================================
+  getHabitConfigs(): HabitItemConfig[] {
+    const saved = this.getFromLocalStorage<HabitItemConfig[]>(LS_HABIT_CONFIGS_KEY);
+    if (saved && saved.length > 0 && saved.some((s) => s.id === 'magnesium')) {
+      return saved;
+    }
+    this.saveToLocalStorage(LS_HABIT_CONFIGS_KEY, DEFAULT_HABIT_CONFIGS);
+    return DEFAULT_HABIT_CONFIGS;
+  }
+
+  saveHabitConfigs(configs: HabitItemConfig[]): void {
+    this.saveToLocalStorage(LS_HABIT_CONFIGS_KEY, configs);
+  }
+
+  async getDailyHabits(): Promise<DailyHabitEntry[]> {
+    try {
+      const db = await this.initDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DAILY_HABITS_STORE, 'readonly');
+        const store = tx.objectStore(DAILY_HABITS_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => {
+          let list = (req.result || []) as DailyHabitEntry[];
+          list.sort((a, b) => b.date.localeCompare(a.date));
+          if (list.length === 0) {
+            const local = this.getFromLocalStorage<DailyHabitEntry[]>(LS_DAILY_HABITS_KEY);
+            if (local && local.length > 0) list = local;
+          }
+          this.saveToLocalStorage(LS_DAILY_HABITS_KEY, list);
+          resolve(list);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Fallback to LocalStorage for getDailyHabits', e);
+      const local = this.getFromLocalStorage<DailyHabitEntry[]>(LS_DAILY_HABITS_KEY) || [];
+      return local.sort((a, b) => b.date.localeCompare(a.date));
+    }
+  }
+
+  async getDailyHabitByDate(date: string): Promise<DailyHabitEntry | null> {
+    const habits = await this.getDailyHabits();
+    return habits.find((h) => h.date === date && !h.isDeleted) || null;
+  }
+
+  async saveDailyHabit(entry: DailyHabitEntry, shouldEnqueue = true): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(DAILY_HABITS_STORE, 'readwrite');
+        const store = tx.objectStore(DAILY_HABITS_STORE);
+        const req = store.put(entry);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed saving daily habit to IDB', e);
+    }
+    const current = await this.getDailyHabits();
+    const idx = current.findIndex((h) => h.id === entry.id || h.date === entry.date);
+    if (idx >= 0) {
+      current[idx] = entry;
+    } else {
+      current.push(entry);
+    }
+    current.sort((a, b) => b.date.localeCompare(a.date));
+    this.saveToLocalStorage(LS_DAILY_HABITS_KEY, current);
+
+    if (shouldEnqueue) {
+      this.enqueuePendingSync({
+        type: 'upsert_daily_habit',
+        payload: entry,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  async deleteDailyHabit(id: string, shouldEnqueue = true): Promise<void> {
+    try {
+      const db = await this.initDB();
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(DAILY_HABITS_STORE, 'readwrite');
+        const store = tx.objectStore(DAILY_HABITS_STORE);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      console.warn('Failed deleting daily habit from IDB', e);
+    }
+    const current = await this.getDailyHabits();
+    const filtered = current.filter((h) => h.id !== id);
+    this.saveToLocalStorage(LS_DAILY_HABITS_KEY, filtered);
+
+    if (shouldEnqueue) {
+      this.enqueuePendingSync({
+        type: 'delete_daily_habit',
+        payload: { id },
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  public async upsertDailyHabitsFromRemote(incoming: DailyHabitEntry[]): Promise<void> {
+    if (incoming.length === 0) return;
+    const current = await this.getDailyHabits();
+    const map = new Map<string, DailyHabitEntry>();
+    current.forEach((h) => map.set(h.id, h));
+    incoming.forEach((h) => map.set(h.id, h));
+    const merged = Array.from(map.values()).sort((a, b) => b.date.localeCompare(a.date));
+    try {
+      const db = await this.initDB();
+      const tx = db.transaction(DAILY_HABITS_STORE, 'readwrite');
+      const store = tx.objectStore(DAILY_HABITS_STORE);
+      merged.forEach((h) => store.put(h));
+    } catch (e) {
+      console.warn('Bulk save daily habits to IDB failed', e);
+    }
+    this.saveToLocalStorage(LS_DAILY_HABITS_KEY, merged);
+  }
+
   // Backup & Restore
   async exportJSON(): Promise<string> {
     const workouts = await this.getWorkouts();
     const customExercises = await this.getCustomExercises();
     const templates = await this.getTemplates();
     const bodyMetrics = await this.getBodyMetrics();
+    const dailyHabits = await this.getDailyHabits();
+    const habitConfigs = this.getHabitConfigs();
     const backupObj = {
       app: 'IronTrack',
-      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0',
+      version: typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.2.0',
       exportedAt: new Date().toISOString(),
       data: {
         workouts,
         customExercises,
         templates,
         bodyMetrics,
+        dailyHabits,
+        habitConfigs,
       },
     };
     return JSON.stringify(backupObj, null, 2);
@@ -546,6 +683,8 @@ class StorageService {
       const customExercises: Exercise[] = parsed?.data?.customExercises || [];
       const templates: WorkoutTemplate[] = parsed?.data?.templates || [];
       const bodyMetrics: BodyMetricEntry[] = parsed?.data?.bodyMetrics || [];
+      const dailyHabits: DailyHabitEntry[] = parsed?.data?.dailyHabits || [];
+      const habitConfigs: HabitItemConfig[] = parsed?.data?.habitConfigs || [];
 
       if (!Array.isArray(workouts)) {
         throw new Error('导入文件格式不正确，缺少有效的训练记录数据');
@@ -560,6 +699,12 @@ class StorageService {
       }
       for (const bm of bodyMetrics) {
         await this.saveBodyMetric(bm);
+      }
+      for (const dh of dailyHabits) {
+        await this.saveDailyHabit(dh, false);
+      }
+      if (Array.isArray(habitConfigs) && habitConfigs.length > 0) {
+        this.saveHabitConfigs(habitConfigs);
       }
 
       return { success: true, count: workouts.length };

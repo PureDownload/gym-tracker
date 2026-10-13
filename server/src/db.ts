@@ -99,6 +99,20 @@ export function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_body_metrics_user_updated ON body_metrics(user_id, updated_at);
     CREATE INDEX IF NOT EXISTS idx_body_metrics_user_date ON body_metrics(user_id, date);
+
+    CREATE TABLE IF NOT EXISTS daily_habits (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      data_json TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_daily_habits_user_updated ON daily_habits(user_id, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_daily_habits_user_date ON daily_habits(user_id, date);
   `);
 
   // Migrate existing users table if columns are missing

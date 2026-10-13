@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Shield,
   Layers,
+  Droplets,
 } from 'lucide-react';
 import type { WorkoutSession, WorkoutTemplate, BodyMetricEntry, Exercise } from '../types/workout';
 import type { SyncStatusInfo } from '../types/cloud';
@@ -47,6 +48,7 @@ interface ProfileViewProps {
   themeState: ThemeState;
   isWideMode: boolean;
   onToggleWideMode: () => void;
+  onOpenDeskMode?: () => void;
   onDataChanged: () => void;
   onSaveBodyMetric: (entry: BodyMetricEntry) => void;
   onDeleteBodyMetric: (id: string) => void;
@@ -74,6 +76,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   themeState,
   isWideMode,
   onToggleWideMode,
+  onOpenDeskMode,
   onDataChanged,
   onSaveBodyMetric,
   onDeleteBodyMetric,
@@ -564,6 +567,40 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <ChevronRight size={18} color="var(--text-muted)" />
             </div>
           </div>
+
+          {/* Desk Mode Entrance */}
+          {onOpenDeskMode && (
+            <div className="profile-menu-row" onClick={onOpenDeskMode}>
+              <div className="profile-menu-left">
+                <div
+                  className="profile-menu-icon"
+                  style={{ backgroundColor: 'rgba(6, 182, 212, 0.12)', color: '#06b6d4' }}
+                >
+                  <Droplets size={18} />
+                </div>
+                <div className="profile-menu-info">
+                  <div className="profile-menu-title">工位专注工作台 (IronDesk)</div>
+                  <div className="profile-menu-desc">饮水快捷打卡 · 补剂清单 · 连续达标周历</div>
+                </div>
+              </div>
+              <div className="profile-menu-right">
+                <span
+                  style={{
+                    fontSize: '0.74rem',
+                    padding: '3px 8px',
+                    borderRadius: '12px',
+                    background: 'rgba(6, 182, 212, 0.15)',
+                    border: '1px solid rgba(6, 182, 212, 0.3)',
+                    color: '#06b6d4',
+                    fontWeight: 600,
+                  }}
+                >
+                  进入工作台
+                </span>
+                <ChevronRight size={18} color="var(--text-muted)" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

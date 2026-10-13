@@ -24,6 +24,7 @@ import type { SyncStatusInfo } from './types/cloud';
 import { ThemeModal } from './components/ThemeModal';
 import { themeService } from './services/themeService';
 import type { ThemeState } from './types/theme';
+import { DeskDashboard } from './components/DeskDashboard';
 import './styles/base.css';
 import './styles/app.css';
 
@@ -39,6 +40,17 @@ export function App() {
   const [bodyMetrics, setBodyMetrics] = useState<BodyMetricEntry[]>([]);
   const [workoutToCopy, setWorkoutToCopy] = useState<WorkoutSession | null>(null);
   const [exerciseToAdd, setExerciseToAdd] = useState<Exercise | null>(null);
+
+  // 工位专注工作台模式 (Desk Mode)
+  const [isDeskMode, setIsDeskMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#desk' || window.location.search.includes('mode=desk')) {
+        return true;
+      }
+      return localStorage.getItem('irontrack_view_mode') === 'desk';
+    }
+    return false;
+  });
 
   // Active workout draft tracking (for tab preservation & stale recovery)
   const [activeDraft, setActiveDraft] = useState<WorkoutDraft | null>(() => storageService.getWorkoutDraft());
@@ -141,7 +153,15 @@ export function App() {
       }
     }
 
+    const handleHash = () => {
+      if (window.location.hash === '#desk') {
+        setIsDeskMode(true);
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+
     return () => {
+      window.removeEventListener('hashchange', handleHash);
       unsubSync();
       unsubData();
       unsubTheme();
@@ -296,6 +316,24 @@ export function App() {
     setShowBackToTop(false);
   }, [activeTab]);
 
+  if (isDeskMode) {
+    return (
+      <>
+        <DeskDashboard
+          workouts={workouts}
+          syncStatus={syncStatus}
+          onTriggerSync={() => cloudSyncService.sync()}
+          onOpenCloudModal={() => setIsCloudModalOpen(true)}
+        />
+        <CloudSyncModal
+          isOpen={isCloudModalOpen}
+          onClose={() => setIsCloudModalOpen(false)}
+          onDataChanged={loadData}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="app-viewport">
       <div className={`mobile-shell ${isWideMode ? 'wide-mode' : ''}`}>
@@ -319,6 +357,10 @@ export function App() {
           onOpenCloudModal={() => {
             setActiveTab('profile');
             setProfileSubPage('cloud');
+          }}
+          onSwitchToDeskMode={() => {
+            setIsDeskMode(true);
+            localStorage.setItem('irontrack_view_mode', 'desk');
           }}
         />
 
@@ -402,6 +444,10 @@ export function App() {
                   themeState={themeState}
                   isWideMode={isWideMode}
                   onToggleWideMode={() => setIsWideMode(!isWideMode)}
+                  onOpenDeskMode={() => {
+                    setIsDeskMode(true);
+                    localStorage.setItem('irontrack_view_mode', 'desk');
+                  }}
                   onDataChanged={loadData}
                   onSaveBodyMetric={handleSaveBodyMetric}
                   onDeleteBodyMetric={handleDeleteBodyMetric}
