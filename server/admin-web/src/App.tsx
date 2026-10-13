@@ -196,6 +196,11 @@ export const App: React.FC = () => {
                 setUsersPagination((prev) => ({ ...prev, page: 1 }));
                 fetchUsers(1, keyword, role, status);
               }}
+              onNavigateToUserWorkouts={(userId) => {
+                setWorkoutsFilter((prev) => ({ ...prev, userId }));
+                setCurrentTab('workouts');
+                fetchWorkouts(1, userId, '', '', '');
+              }}
             />
           )}
 

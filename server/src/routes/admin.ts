@@ -410,6 +410,257 @@ adminRouter.get('/users', (req: AuthenticatedRequest, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// 2.1 Member Visualization & Leaderboards
+// ---------------------------------------------------------------------------
+adminRouter.get('/members/leaderboard', (req: AuthenticatedRequest, res) => {
+  try {
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
+    // Fetch all non-deleted workouts
+    const allWorkouts = db.prepare(`
+      SELECT w.id, w.user_id, u.username, u.role, w.date, w.exercises_json, w.updated_at
+      FROM workouts w
+      JOIN users u ON w.user_id = u.id
+      WHERE w.is_deleted = 0
+    `).all() as Array<{
+      id: string;
+      user_id: string;
+      username: string;
+      role: 'admin' | 'user';
+      date: string;
+      exercises_json: string | null;
+      updated_at: number;
+    }>;
+
+    interface MemberAgg {
+      userId: string;
+      username: string;
+      role: 'admin' | 'user';
+      totalVolumeKg: number;
+      totalWorkouts: number;
+      recentWorkouts30d: number;
+      lastWorkoutDate: string | null;
+    }
+
+    const memberMap = new Map<string, MemberAgg>();
+
+    allWorkouts.forEach((w) => {
+      let agg = memberMap.get(w.user_id);
+      if (!agg) {
+        agg = {
+          userId: w.user_id,
+          username: w.username,
+          role: w.role,
+          totalVolumeKg: 0,
+          totalWorkouts: 0,
+          recentWorkouts30d: 0,
+          lastWorkoutDate: null,
+        };
+        memberMap.set(w.user_id, agg);
+      }
+
+      agg.totalWorkouts += 1;
+      if (w.updated_at >= thirtyDaysAgo) {
+        agg.recentWorkouts30d += 1;
+      }
+      if (!agg.lastWorkoutDate || w.date > agg.lastWorkoutDate) {
+        agg.lastWorkoutDate = w.date;
+      }
+
+      try {
+        const exs: ExerciseRecord[] = JSON.parse(w.exercises_json || '[]');
+        exs.forEach((e) => {
+          (e.sets || []).forEach((s) => {
+            if (s.completed !== false && s.isCompleted !== false) {
+              agg!.totalVolumeKg += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+            }
+          });
+        });
+      } catch (err) {
+        console.warn(`[admin/leaderboard] Failed parsing workout ${w.id}:`, err);
+      }
+    });
+
+    const members = Array.from(memberMap.values());
+
+    // Tonnage Leaderboard (Top 10)
+    const tonnageRanking = [...members]
+      .filter((m) => m.totalVolumeKg > 0)
+      .sort((a, b) => b.totalVolumeKg - a.totalVolumeKg)
+      .slice(0, 10)
+      .map((m, idx) => ({
+        rank: idx + 1,
+        userId: m.userId,
+        username: m.username,
+        role: m.role,
+        totalVolumeKg: Math.round(m.totalVolumeKg),
+        tonnage: Math.round((m.totalVolumeKg / 1000) * 10) / 10,
+        totalWorkouts: m.totalWorkouts,
+        lastWorkoutDate: m.lastWorkoutDate,
+      }));
+
+    // Consistency/Activity Leaderboard (Top 10)
+    const activityRanking = [...members]
+      .filter((m) => m.totalWorkouts > 0)
+      .sort((a, b) => b.recentWorkouts30d - a.recentWorkouts30d || b.totalWorkouts - a.totalWorkouts)
+      .slice(0, 10)
+      .map((m, idx) => ({
+        rank: idx + 1,
+        userId: m.userId,
+        username: m.username,
+        role: m.role,
+        recentWorkouts30d: m.recentWorkouts30d,
+        totalWorkouts: m.totalWorkouts,
+        lastWorkoutDate: m.lastWorkoutDate,
+      }));
+
+    res.json({
+      success: true,
+      tonnageRanking,
+      activityRanking,
+    });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('Error in GET /api/admin/members/leaderboard:', err);
+    res.status(500).json({ error: errorMsg || '获取组员排行榜数据失败' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 2.2 Member Visual Profile Detail
+// ---------------------------------------------------------------------------
+adminRouter.get('/users/:id/profile', (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const targetUser = db.prepare('SELECT id, username, role, status, last_login_at, created_at FROM users WHERE id = ?').get(id) as UserRow | undefined;
+    if (!targetUser) {
+      res.status(404).json({ error: '用户不存在' });
+      return;
+    }
+
+    const workouts = db.prepare(`
+      SELECT id, date, title, duration_minutes, exercises_json, created_at, updated_at
+      FROM workouts
+      WHERE user_id = ? AND is_deleted = 0
+      ORDER BY date DESC, created_at DESC
+    `).all(id) as WorkoutDbRow[];
+
+    let totalVolumeKg = 0;
+    const muscleMap: Record<string, number> = {};
+    const prRecords: Record<string, { exercise: string; maxWeight: number; estimated1RM: number; date: string }> = {};
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    let recent30dWorkouts = 0;
+
+    const recentWorkouts = workouts.slice(0, 10).map((w) => {
+      let exCount = 0;
+      let sessionVol = 0;
+      const exNames: string[] = [];
+      try {
+        const exs: ExerciseRecord[] = JSON.parse(w.exercises_json || '[]');
+        exCount = exs.length;
+        exs.forEach((e) => {
+          const exName = e.name || e.exerciseName || '自定义动作';
+          if (!exNames.includes(exName)) exNames.push(exName);
+          (e.sets || []).forEach((s) => {
+            if (s.completed !== false && s.isCompleted !== false) {
+              sessionVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+            }
+          });
+        });
+      } catch (err) {
+        console.warn(`[admin/user-profile] Failed parsing workout ${w.id}:`, err);
+      }
+
+      return {
+        id: w.id,
+        date: w.date,
+        title: w.title,
+        durationMinutes: w.duration_minutes || 0,
+        exerciseCount: exCount,
+        volumeKg: Math.round(sessionVol),
+        exerciseNames: exNames,
+      };
+    });
+
+    workouts.forEach((w) => {
+      if (w.updated_at >= thirtyDaysAgo) {
+        recent30dWorkouts += 1;
+      }
+
+      try {
+        const exs: ExerciseRecord[] = JSON.parse(w.exercises_json || '[]');
+        exs.forEach((e) => {
+          const exName = e.name || e.exerciseName || '训练动作';
+          const mg = inferMuscleGroup(exName);
+
+          (e.sets || []).forEach((s) => {
+            if (s.completed !== false && s.isCompleted !== false) {
+              const weight = Number(s.weight) || 0;
+              const reps = Number(s.reps) || 0;
+              const vol = weight * reps;
+              totalVolumeKg += vol;
+              muscleMap[mg] = (muscleMap[mg] || 0) + 1;
+
+              const e1rm = calculate1RM(weight, reps);
+              if (!prRecords[exName] || e1rm > prRecords[exName].estimated1RM) {
+                prRecords[exName] = {
+                  exercise: exName,
+                  maxWeight: weight,
+                  estimated1RM: e1rm,
+                  date: w.date,
+                };
+              }
+            }
+          });
+        });
+      } catch (err) {
+        console.warn(`[admin/user-profile] Failed processing workout ${w.id}:`, err);
+      }
+    });
+
+    const muscleDistribution = Object.entries(muscleMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Latest body metric
+    const latestMetric = db.prepare(`
+      SELECT date, weight_kg, body_fat_percent, measurements_json, notes
+      FROM body_metrics
+      WHERE user_id = ? AND is_deleted = 0
+      ORDER BY date DESC
+      LIMIT 1
+    `).get(id) as BodyMetricDbRow | undefined;
+
+    res.json({
+      success: true,
+      profile: {
+        user: targetUser,
+        kpis: {
+          totalWorkouts: workouts.length,
+          totalVolumeKg: Math.round(totalVolumeKg),
+          tonnage: Math.round((totalVolumeKg / 1000) * 10) / 10,
+          recent30dWorkouts,
+          lastWorkoutDate: workouts.length > 0 ? workouts[0].date : null,
+        },
+        muscleDistribution,
+        recentWorkouts,
+        prRecords: Object.values(prRecords).sort((a, b) => b.estimated1RM - a.estimated1RM).slice(0, 8),
+        latestMetric: latestMetric ? {
+          date: latestMetric.date,
+          weightKg: latestMetric.weight_kg,
+          bodyFatPercent: latestMetric.body_fat_percent,
+        } : null,
+      },
+    });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error(`Error in GET /api/admin/users/:id/profile:`, err);
+    res.status(500).json({ error: errorMsg || '获取用户训练画像失败' });
+  }
+});
+
+
 // Create new user by Admin
 adminRouter.post('/users', (req: AuthenticatedRequest, res) => {
   try {

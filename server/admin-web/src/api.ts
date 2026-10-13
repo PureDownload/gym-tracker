@@ -1,4 +1,13 @@
-import type { AuthUser, OverviewData, AdminUser, AdminWorkout, AdminBodyMetric, Pagination } from './types';
+import type {
+  AuthUser,
+  OverviewData,
+  AdminUser,
+  AdminWorkout,
+  AdminBodyMetric,
+  Pagination,
+  LeaderboardData,
+  MemberProfileData,
+} from './types';
 
 const TOKEN_KEY = 'irontrack_admin_token';
 const USER_KEY = 'irontrack_admin_user';
@@ -197,6 +206,15 @@ class AdminApiClient {
 
   public getDownloadDbUrl(): string {
     return `/api/admin/system/download-db`;
+  }
+
+  public async getLeaderboard(): Promise<LeaderboardData> {
+    return this.request<LeaderboardData>('/api/admin/members/leaderboard');
+  }
+
+  public async getUserProfile(id: string): Promise<MemberProfileData> {
+    const res = await this.request<{ success: boolean; profile: MemberProfileData }>(`/api/admin/users/${id}/profile`);
+    return res.profile;
   }
 }
 

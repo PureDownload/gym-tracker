@@ -19,27 +19,38 @@ import {
   Moon,
   Shield,
 } from 'lucide-react';
-import type { DailyHabitEntry, HabitItemConfig, HabitRecordItem, WorkoutSession } from '../types/workout';
+import type { DailyHabitEntry, HabitItemConfig, HabitRecordItem, WorkoutSession, Exercise, BodyMetricEntry } from '../types/workout';
 import { storageService } from '../services/storage';
 import { cloudSyncService } from '../services/cloudSyncService';
 import { cloudAuthService } from '../services/cloudAuthService';
 import type { SyncStatusInfo } from '../types/cloud';
 import { TrainingCalendar } from './TrainingCalendar';
+import { PCAnalyticsCockpit } from './PCAnalyticsCockpit';
 import '../styles/desk.css';
 
 interface DeskDashboardProps {
   workouts: WorkoutSession[];
+  customExercises?: Exercise[];
+  bodyMetrics?: BodyMetricEntry[];
   syncStatus: SyncStatusInfo;
   onTriggerSync: () => void;
   onOpenCloudModal: () => void;
+  onOpenBodyMetricsModal?: () => void;
+  onExitDeskMode?: () => void;
 }
 
 export const DeskDashboard: React.FC<DeskDashboardProps> = ({
   workouts,
+  customExercises = [],
+  bodyMetrics = [],
   syncStatus,
   onTriggerSync,
   onOpenCloudModal,
+  onOpenBodyMetricsModal,
+  onExitDeskMode,
 }) => {
+  const [deskViewMode, setDeskViewMode] = useState<'tracker' | 'analytics'>('tracker');
+
   const [cloudConfig, setCloudConfig] = useState(() => cloudAuthService.getConfig());
 
   useEffect(() => {
@@ -300,7 +311,37 @@ export const DeskDashboard: React.FC<DeskDashboardProps> = ({
           </div>
         </div>
 
+        {/* PC 双界面切换导航 (专注打卡 vs 个人数据大屏) */}
+        <div className="pc-desk-nav-tabs">
+          <button
+            type="button"
+            className={`pc-desk-tab-btn ${deskViewMode === 'tracker' ? 'active' : ''}`}
+            onClick={() => setDeskViewMode('tracker')}
+          >
+            <Zap size={14} /> ⚡ 专注打卡工作台
+          </button>
+          <button
+            type="button"
+            className={`pc-desk-tab-btn ${deskViewMode === 'analytics' ? 'active' : ''}`}
+            onClick={() => setDeskViewMode('analytics')}
+          >
+            <Sparkles size={14} /> 📊 个人数据大屏
+          </button>
+        </div>
+
         <div className="desk-controls">
+          {/* 切换回手机视图 */}
+          {onExitDeskMode && (
+            <button
+              type="button"
+              className="desk-btn-ghost"
+              onClick={onExitDeskMode}
+              title="切换回移动端轻量竖屏视图"
+            >
+              <span>📱 手机视图</span>
+            </button>
+          )}
+
           {/* 私有云账号状态与登录 */}
           {cloudAuthService.isCloudModeActive() ? (
             <button
@@ -363,10 +404,18 @@ export const DeskDashboard: React.FC<DeskDashboardProps> = ({
         </div>
       </header>
 
-      {/* 主工作区 */}
-      <main className="desk-grid">
-        {/* 1. 喝水快捷岛 */}
-        <section className="desk-card">
+      {/* 主工作区: 根据模式切换打卡工作台与数据大屏 */}
+      {deskViewMode === 'analytics' ? (
+        <PCAnalyticsCockpit
+          workouts={workouts}
+          customExercises={customExercises}
+          bodyMetrics={bodyMetrics}
+          onOpenBodyMetricsModal={onOpenBodyMetricsModal}
+        />
+      ) : (
+        <main className="desk-grid">
+          {/* 1. 喝水快捷岛 */}
+          <section className="desk-card">
           <div className="desk-card-header">
             <div className="desk-card-title">
               <Droplets size={20} color="#06b6d4" />
@@ -563,6 +612,7 @@ export const DeskDashboard: React.FC<DeskDashboardProps> = ({
           />
         </section>
       </main>
+      )}
 
       {/* 底部键盘提示 */}
       <footer className="desk-footer-hint">

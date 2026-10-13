@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   UserPlus,
@@ -7,9 +7,15 @@ import {
   Download,
   Trash2,
   AlertTriangle,
+  Trophy,
+  Activity,
+  Flame,
+  Weight,
+  TrendingUp,
 } from 'lucide-react';
 import { api } from '../api';
-import type { AdminUser, Pagination, AuthUser } from '../types';
+import type { AdminUser, Pagination, AuthUser, LeaderboardData } from '../types';
+import { MemberProfileModal } from './MemberProfileModal';
 
 interface UsersViewProps {
   users: AdminUser[];
@@ -18,6 +24,7 @@ interface UsersViewProps {
   onRefresh: () => void;
   onPageChange: (page: number) => void;
   onSearch: (keyword: string, role: string, status: string) => void;
+  onNavigateToUserWorkouts?: (userId: string) => void;
 }
 
 export const UsersView: React.FC<UsersViewProps> = ({
@@ -27,7 +34,14 @@ export const UsersView: React.FC<UsersViewProps> = ({
   onRefresh,
   onPageChange,
   onSearch,
+  onNavigateToUserWorkouts,
 }) => {
+  const [subTab, setSubTab] = useState<'list' | 'leaderboard'>('list');
+  const [leaderboard, setLeaderboard] = useState<LeaderboardData | null>(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [profileTargetUserId, setProfileTargetUserId] = useState<string | null>(null);
+  const [profileTargetUsername, setProfileTargetUsername] = useState<string | undefined>();
+
   const [keyword, setKeyword] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -38,6 +52,27 @@ export const UsersView: React.FC<UsersViewProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
   const [actionLoading, setActionLoading] = useState(false);
+
+  const loadLeaderboardData = () => {
+    setLeaderboardLoading(true);
+    api.getLeaderboard()
+      .then((data) => {
+        setLeaderboard(data);
+      })
+      .catch((err) => {
+        console.warn('Failed to load leaderboard:', err);
+      })
+      .finally(() => {
+        setLeaderboardLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    if (subTab === 'leaderboard' && !leaderboard) {
+      loadLeaderboardData();
+    }
+  }, [subTab, leaderboard]);
+
 
   // Password reset modal
   const [resetTargetUser, setResetTargetUser] = useState<AdminUser | null>(null);
@@ -146,57 +181,52 @@ export const UsersView: React.FC<UsersViewProps> = ({
 
   return (
     <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Filter and Actions Toolbar */}
-      <div className="card-elevated" style={{ padding: '18px 24px' }}>
-        <form onSubmit={handleFilterSubmit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Search Input */}
-            <div style={{ position: 'relative' }}>
-              <input
-                type="text"
-                placeholder="搜索用户名..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="input-text"
-                style={{ paddingLeft: '34px', width: '220px' }}
-              />
-              <Search size={15} style={{ position: 'absolute', left: '11px', top: '12px', color: 'var(--text-dim)' }} />
-            </div>
+      {/* Top View Mode Switcher */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(255, 255, 255, 0.04)', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <button
+            type="button"
+            onClick={() => setSubTab('list')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: subTab === 'list' ? 'var(--accent-primary)' : 'transparent',
+              color: subTab === 'list' ? '#000' : 'var(--text-muted)',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Activity size={15} /> 组员数据与账号治理
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubTab('leaderboard')}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              background: subTab === 'leaderboard' ? 'var(--accent-primary)' : 'transparent',
+              color: subTab === 'leaderboard' ? '#000' : 'var(--text-muted)',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Trophy size={15} /> 团队排行榜 (Leaderboards)
+          </button>
+        </div>
 
-            {/* Role Filter */}
-            <select
-              value={roleFilter}
-              onChange={(e) => {
-                setRoleFilter(e.target.value);
-                onSearch(keyword, e.target.value, statusFilter);
-              }}
-              className="select-custom"
-            >
-              <option value="">全部角色</option>
-              <option value="admin">系统管理员 (Admin)</option>
-              <option value="user">健身用户 (User)</option>
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                onSearch(keyword, roleFilter, e.target.value);
-              }}
-              className="select-custom"
-            >
-              <option value="">全部状态</option>
-              <option value="active">正常</option>
-              <option value="disabled">已停用</option>
-            </select>
-
-            <button type="submit" className="btn btn-secondary">
-              筛选
-            </button>
-          </div>
-
-          {/* Create User Button */}
+        {subTab === 'list' && (
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
@@ -204,25 +234,80 @@ export const UsersView: React.FC<UsersViewProps> = ({
           >
             <UserPlus size={16} /> 新建账号
           </button>
-        </form>
+        )}
       </div>
 
-      {/* Users Data Table */}
-      <div className="card-elevated" style={{ overflow: 'hidden' }}>
-        <div className="table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>用户名 / 身份</th>
-                <th>角色与权限</th>
-                <th>状态</th>
-                <th>训练统计</th>
-                <th>总举铁容量</th>
-                <th>最后活跃时间</th>
-                <th style={{ textAlign: 'right' }}>操作</th>
-              </tr>
-            </thead>
-            <tbody>
+      {subTab === 'list' ? (
+        <>
+          {/* Top Filter and Actions Toolbar */}
+          <div className="card-elevated" style={{ padding: '18px 24px' }}>
+            <form onSubmit={handleFilterSubmit} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                {/* Search Input */}
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="搜索用户名..."
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="input-text"
+                    style={{ paddingLeft: '34px', width: '220px' }}
+                  />
+                  <Search size={15} style={{ position: 'absolute', left: '11px', top: '12px', color: 'var(--text-dim)' }} />
+                </div>
+
+                {/* Role Filter */}
+                <select
+                  value={roleFilter}
+                  onChange={(e) => {
+                    setRoleFilter(e.target.value);
+                    onSearch(keyword, e.target.value, statusFilter);
+                  }}
+                  className="select-custom"
+                >
+                  <option value="">全部角色</option>
+                  <option value="admin">系统管理员 (Admin)</option>
+                  <option value="user">健身用户 (User)</option>
+                </select>
+
+                {/* Status Filter */}
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    onSearch(keyword, roleFilter, e.target.value);
+                  }}
+                  className="select-custom"
+                >
+                  <option value="">全部状态</option>
+                  <option value="active">正常</option>
+                  <option value="disabled">已停用</option>
+                </select>
+
+                <button type="submit" className="btn btn-secondary">
+                  筛选
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Users Data Table */}
+          <div className="card-elevated" style={{ overflow: 'hidden' }}>
+            <div className="table-container">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>用户名 / 身份</th>
+                    <th>角色与权限</th>
+                    <th>状态</th>
+                    <th>训练统计</th>
+                    <th>总举铁容量</th>
+                    <th>最后活跃时间</th>
+                    <th style={{ textAlign: 'right' }}>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+
               {users.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
@@ -236,7 +321,14 @@ export const UsersView: React.FC<UsersViewProps> = ({
                     <tr key={u.id}>
                       {/* Username */}
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                          onClick={() => {
+                            setProfileTargetUserId(u.id);
+                            setProfileTargetUsername(u.username);
+                          }}
+                          title="点击查看该组员的训练画像"
+                        >
                           <div style={{
                             width: '34px',
                             height: '34px',
@@ -253,7 +345,7 @@ export const UsersView: React.FC<UsersViewProps> = ({
                           </div>
                           <div>
                             <div style={{ fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {u.username}
+                              <span style={{ borderBottom: '1px dashed rgba(255, 255, 255, 0.3)' }}>{u.username}</span>
                               {isCurrent && (
                                 <span style={{ fontSize: '10px', color: '#22c55e', background: 'rgba(34, 197, 94, 0.15)', padding: '1px 5px', borderRadius: '4px' }}>
                                   当前操作者
@@ -340,6 +432,18 @@ export const UsersView: React.FC<UsersViewProps> = ({
                       {/* Actions */}
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          {/* Inspect Profile */}
+                          <button
+                            onClick={() => {
+                              setProfileTargetUserId(u.id);
+                              setProfileTargetUsername(u.username);
+                            }}
+                            className="btn btn-secondary btn-icon"
+                            title="查看该组员可视化训练画像与力量记录"
+                          >
+                            <Activity size={14} color="#22c55e" />
+                          </button>
+
                           {/* Export data */}
                           <a
                             href={api.getExportUserUrl(u.id)}
@@ -418,6 +522,240 @@ export const UsersView: React.FC<UsersViewProps> = ({
           </div>
         )}
       </div>
+        </>
+      ) : (
+        /* Leaderboards View */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#fff', margin: 0 }}>
+                团队力量与活跃度排行榜
+              </h3>
+              <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '4px 0 0 0' }}>
+                点击任意组员卡片，可直接查看其训练画像与单动作力量记录
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={loadLeaderboardData}
+              disabled={leaderboardLoading}
+              className="btn btn-secondary"
+              style={{ fontSize: '12px' }}
+            >
+              {leaderboardLoading ? '正在计算中...' : '刷新榜单数据'}
+            </button>
+          </div>
+
+          {leaderboardLoading && !leaderboard ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-dim)' }}>
+              正在聚合全员举铁数据...
+            </div>
+          ) : !leaderboard ? null : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+              {/* 1. Tonnage Ranking */}
+              <div className="card-elevated" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <Trophy size={18} color="#eab308" />
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>
+                    全员累计举铁总吨位榜 (Top 10)
+                  </span>
+                </div>
+
+                {leaderboard.tonnageRanking.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                    暂无举铁数据
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {leaderboard.tonnageRanking.map((item) => (
+                      <div
+                        key={item.userId}
+                        onClick={() => {
+                          setProfileTargetUserId(item.userId);
+                          setProfileTargetUsername(item.username);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 14px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
+                          e.currentTarget.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '12px',
+                              backgroundColor:
+                                item.rank === 1
+                                  ? 'rgba(234, 179, 8, 0.2)'
+                                  : item.rank === 2
+                                  ? 'rgba(148, 163, 184, 0.2)'
+                                  : item.rank === 3
+                                  ? 'rgba(180, 83, 9, 0.2)'
+                                  : 'rgba(255, 255, 255, 0.05)',
+                              color:
+                                item.rank === 1
+                                  ? '#facc15'
+                                  : item.rank === 2
+                                  ? '#cbd5e1'
+                                  : item.rank === 3
+                                  ? '#f97316'
+                                  : 'var(--text-dim)',
+                            }}
+                          >
+                            {item.rank}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {item.username}
+                              {item.role === 'admin' && (
+                                <span style={{ fontSize: '10px', color: '#a855f7' }}>[管]</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                              累计打卡 {item.totalWorkouts} 场
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '16px', fontWeight: 800, color: '#4ade80', fontFamily: 'var(--font-display)' }}>
+                            {item.tonnage} <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>吨</span>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                            {item.totalVolumeKg.toLocaleString()} kg
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Activity Ranking */}
+              <div className="card-elevated" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                  <Flame size={18} color="#06b6d4" />
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>
+                    近 30 天打卡活跃度榜 (Top 10)
+                  </span>
+                </div>
+
+                {leaderboard.activityRanking.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '13px' }}>
+                    暂无活跃记录
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {leaderboard.activityRanking.map((item) => (
+                      <div
+                        key={item.userId}
+                        onClick={() => {
+                          setProfileTargetUserId(item.userId);
+                          setProfileTargetUsername(item.username);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 14px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                          borderRadius: '10px',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.07)';
+                          e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '12px',
+                              backgroundColor:
+                                item.rank === 1
+                                  ? 'rgba(6, 182, 212, 0.2)'
+                                  : item.rank === 2
+                                  ? 'rgba(148, 163, 184, 0.2)'
+                                  : item.rank === 3
+                                  ? 'rgba(180, 83, 9, 0.2)'
+                                  : 'rgba(255, 255, 255, 0.05)',
+                              color:
+                                item.rank === 1
+                                  ? '#22d3ee'
+                                  : item.rank === 2
+                                  ? '#cbd5e1'
+                                  : item.rank === 3
+                                  ? '#f97316'
+                                  : 'var(--text-dim)',
+                            }}
+                          >
+                            {item.rank}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {item.username}
+                              {item.role === 'admin' && (
+                                <span style={{ fontSize: '10px', color: '#a855f7' }}>[管]</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                              最近训练: {item.lastWorkoutDate || '未知'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '16px', fontWeight: 800, color: '#22d3ee', fontFamily: 'var(--font-display)' }}>
+                            {item.recentWorkouts30d} <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>场</span>
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
+                            月活跃率 {Math.min(100, Math.round((item.recentWorkouts30d / 30) * 100))}%
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {/* Modal: Create User */}
       {isCreateModalOpen && (
@@ -600,6 +938,18 @@ export const UsersView: React.FC<UsersViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal: Member Visual Training Profile */}
+      <MemberProfileModal
+        userId={profileTargetUserId}
+        username={profileTargetUsername}
+        onClose={() => {
+          setProfileTargetUserId(null);
+          setProfileTargetUsername(undefined);
+        }}
+        onFilterWorkouts={onNavigateToUserWorkouts}
+      />
     </div>
   );
 };
+

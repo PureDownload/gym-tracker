@@ -133,3 +133,73 @@ export interface Pagination {
   total: number;
   totalPages: number;
 }
+
+export interface TonnageRankItem {
+  rank: number;
+  userId: string;
+  username: string;
+  role: 'admin' | 'user';
+  totalVolumeKg: number;
+  tonnage: number;
+  totalWorkouts: number;
+  lastWorkoutDate: string | null;
+}
+
+export interface ActivityRankItem {
+  rank: number;
+  userId: string;
+  username: string;
+  role: 'admin' | 'user';
+  recentWorkouts30d: number;
+  totalWorkouts: number;
+  lastWorkoutDate: string | null;
+}
+
+export interface LeaderboardData {
+  tonnageRanking: TonnageRankItem[];
+  activityRanking: ActivityRankItem[];
+}
+
+export interface MemberProfileWorkoutItem {
+  id: string;
+  date: string;
+  title: string;
+  durationMinutes: number;
+  exerciseCount: number;
+  volumeKg: number;
+  exerciseNames: string[];
+}
+
+export interface MemberProfilePRItem {
+  exercise: string;
+  maxWeight: number;
+  estimated1RM: number;
+  date: string;
+}
+
+export interface MemberProfileData {
+  user: {
+    id: string;
+    username: string;
+    role: 'admin' | 'user';
+    status: 'active' | 'disabled';
+    last_login_at: number | null;
+    created_at: number;
+  };
+  kpis: {
+    totalWorkouts: number;
+    totalVolumeKg: number;
+    tonnage: number;
+    recent30dWorkouts: number;
+    lastWorkoutDate: string | null;
+  };
+  muscleDistribution: MuscleItem[];
+  recentWorkouts: MemberProfileWorkoutItem[];
+  prRecords: MemberProfilePRItem[];
+  latestMetric: {
+    date: string;
+    weightKg: number | null;
+    bodyFatPercent: number | null;
+  } | null;
+}
+

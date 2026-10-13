@@ -321,14 +321,31 @@ export function App() {
       <>
         <DeskDashboard
           workouts={workouts}
+          customExercises={customExercises}
+          bodyMetrics={bodyMetrics}
           syncStatus={syncStatus}
           onTriggerSync={() => cloudSyncService.sync()}
           onOpenCloudModal={() => setIsCloudModalOpen(true)}
+          onOpenBodyMetricsModal={() => setIsBodyMetricsModalOpen(true)}
+          onExitDeskMode={() => {
+            setIsDeskMode(false);
+            localStorage.setItem('irontrack_view_mode', 'mobile');
+            if (window.location.hash === '#desk') {
+              window.location.hash = '';
+            }
+          }}
         />
         <CloudSyncModal
           isOpen={isCloudModalOpen}
           onClose={() => setIsCloudModalOpen(false)}
           onDataChanged={loadData}
+        />
+        <BodyMetricsModal
+          isOpen={isBodyMetricsModalOpen}
+          onClose={() => setIsBodyMetricsModalOpen(false)}
+          bodyMetrics={bodyMetrics}
+          onSaveMetric={handleSaveBodyMetric}
+          onDeleteMetric={handleDeleteBodyMetric}
         />
       </>
     );

@@ -1,0 +1,308 @@
+/* ==========================================================================
+   IronTrack - PC Analytics Cockpit (PC 个人数据分析驾驶舱)
+   Hardcore OLED Black + Neon Green (#22c55e) & Cyan (#06b6d4)
+   ========================================================================== */
+
+.pc-cockpit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 8px 12px 40px;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* KPI Top Grid */
+.pc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.pc-kpi-card {
+  background: var(--bg-card, #12141a);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.pc-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.pc-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--kpi-glow, #22c55e), transparent);
+  opacity: 0.7;
+}
+
+.pc-kpi-header {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+}
+
+.pc-kpi-title {
+  font-size: 0.82rem;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.pc-kpi-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+}
+
+.pc-kpi-val {
+  font-family: var(--font-display, inherit);
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pc-kpi-unit {
+  font-size: 0.88rem;
+  color: var(--text-dim, #64748b);
+  font-weight: 600;
+}
+
+.pc-kpi-sub {
+  font-size: 0.76rem;
+  color: var(--text-dim, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Two-column Layouts */
+.pc-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1080px) {
+  .pc-two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Standard PC Cockpit Card */
+.pc-card {
+  background: var(--bg-card, #12141a);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.pc-card-header {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+}
+
+.pc-card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pc-card-badge {
+  font-size: 0.74rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted, #94a3b8);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Muscle Recovery Grid */
+.pc-muscle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.pc-muscle-pill {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.pc-muscle-pill.recovered {
+  border-color: rgba(34, 197, 94, 0.25);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.pc-muscle-pill.recovering {
+  border-color: rgba(6, 182, 212, 0.25);
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.pc-muscle-pill.fatigued {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.pc-muscle-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.pc-muscle-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pc-muscle-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.pc-muscle-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* Chart Canvas Area */
+.pc-chart-wrap {
+  width: 100%;
+  position: relative;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  padding: 16px 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.pc-chart-svg {
+  width: 100%;
+  height: 200px;
+  overflow: visible;
+}
+
+/* Exercise Selector */
+.pc-exercise-select {
+  background: #1a1e26;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.pc-exercise-select:focus {
+  border-color: var(--accent-primary, #22c55e);
+}
+
+/* Consistency Heatmap Grid */
+.pc-heatmap-grid {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+  padding: 10px 4px;
+}
+
+.pc-heatmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pc-heatmap-cell {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: transform 0.15s;
+  cursor: pointer;
+}
+
+.pc-heatmap-cell:hover {
+  transform: scale(1.3);
+  z-index: 2;
+}
+
+.pc-heatmap-cell.lvl-1 { background: rgba(34, 197, 94, 0.25); }
+.pc-heatmap-cell.lvl-2 { background: rgba(34, 197, 94, 0.5); }
+.pc-heatmap-cell.lvl-3 { background: rgba(34, 197, 94, 0.75); }
+.pc-heatmap-cell.lvl-4 { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.5); }
+
+/* Switcher in Desk Header */
+.pc-desk-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pc-desk-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pc-desk-tab-btn.active {
+  background: var(--accent-primary, #22c55e);
+  color: #000;
+  box-shadow: 0 2px 10px rgba(34, 197, 94, 0.35);
+}
+
+.pc-desk-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
