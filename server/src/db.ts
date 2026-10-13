@@ -36,9 +36,6 @@ export function initDatabase() {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-    CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
-
     CREATE TABLE IF NOT EXISTS workouts (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -128,6 +125,12 @@ export function initDatabase() {
   if (!existingCols.has('last_login_at')) {
     db.exec(`ALTER TABLE users ADD COLUMN last_login_at INTEGER;`);
   }
+
+  // Create role & status indexes now that columns are guaranteed
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+    CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
+  `);
 
   // Ensure at least one admin exists if there are users
   const adminCountRow = db.prepare(`SELECT COUNT(*) as count FROM users WHERE role = 'admin'`).get() as { count: number } | undefined;

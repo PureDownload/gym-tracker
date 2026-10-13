@@ -16,7 +16,8 @@
     "lint": "oxlint .",
     "server:dev": "pnpm --dir server dev",
     "server:admin": "pnpm --dir server dev:admin",
-    "server:build": "pnpm --dir server build"
+    "server:build": "pnpm --dir server build",
+    "dev:all": "./start.sh"
   },
   "dependencies": {
     "@capacitor/core": "^8.5.1",
