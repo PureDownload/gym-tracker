@@ -5,12 +5,18 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# 安装 better-sqlite3 所需的原生 C/C++ 编译工具
-RUN apk add --no-cache python3 make g++
+# 安装 better-sqlite3 在 Alpine 下编译所需的所有 C/C++ 工具链 (必须包含 build-base)
+RUN apk add --no-cache python3 make g++ build-base
+
+# 使用 Node.js 官方内置 Corepack 激活匹配的 pnpm (避免 npm install -g 的版本冲突与权限问题)
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # 拷贝依赖定义文件，利用 Docker 缓存层
 COPY package.json pnpm-lock.yaml* ./
-RUN npm install -g pnpm && (pnpm install --frozen-lockfile || pnpm install)
+
+# 启用 hoisted 模式（扁平化依赖结构，确保多阶段构建 COPY node_modules 不丢失软链接）
+RUN pnpm config set node-linker hoisted && \
+    pnpm install --no-frozen-lockfile
 
 # 拷贝源码并编译 TypeScript
 COPY tsconfig.json ./
@@ -19,6 +25,7 @@ RUN pnpm run build
 
 # 修剪开发依赖，缩减镜像体积
 RUN pnpm prune --prod
+
 
 # ==========================================
 # 阶段 2: 生产运行阶段 (极简体积，运行内存约 35-45MB)
