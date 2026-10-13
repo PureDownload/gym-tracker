@@ -2,6 +2,8 @@ import Database from 'better-sqlite3';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,7 +134,34 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
   `);
 
-  // Ensure at least one admin exists if there are users
+  // 保证内置系统默认管理员账号存在 (用户名: admin / 默认密码: admin123)
+  const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'admin123';
+  const defaultAdmin = db.prepare('SELECT id, role, password_hash FROM users WHERE username = ?').get('admin') as { id: string; role: string; password_hash: string } | undefined;
+
+  if (!defaultAdmin) {
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(defaultAdminPassword, salt);
+    const now = Date.now();
+    db.prepare(`
+      INSERT INTO users (id, username, password_hash, role, status, created_at, updated_at)
+      VALUES (?, 'admin', ?, 'admin', 'active', ?, ?)
+    `).run(randomUUID(), passwordHash, now, now);
+    console.log(`👑 [内置管理员] 已创建系统默认管理员账号 -> 用户名: admin | 密码: ${defaultAdminPassword} (登录后可自行修改)`);
+  } else {
+    // 确保其角色为 admin 且状态正常
+    if (defaultAdmin.role !== 'admin') {
+      db.prepare(`UPDATE users SET role = 'admin', status = 'active' WHERE id = ?`).run(defaultAdmin.id);
+    }
+    // 若环境变量显式要求重置管理员密码
+    if (process.env.RESET_DEFAULT_ADMIN === 'true') {
+      const salt = bcrypt.genSaltSync(10);
+      const passwordHash = bcrypt.hashSync(defaultAdminPassword, salt);
+      db.prepare(`UPDATE users SET password_hash = ?, status = 'active' WHERE id = ?`).run(passwordHash, defaultAdmin.id);
+      console.log(`🔑 [密码重置] admin 密码已重置为: ${defaultAdminPassword}`);
+    }
+  }
+
+  // 兜底保障：若系统中尚无任何管理员，自动将最早注册的用户提升为管理员
   const adminCountRow = db.prepare(`SELECT COUNT(*) as count FROM users WHERE role = 'admin'`).get() as { count: number } | undefined;
   const adminCount = adminCountRow?.count || 0;
   if (adminCount === 0) {

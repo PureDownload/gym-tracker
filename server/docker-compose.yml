@@ -34,9 +34,8 @@ services:
       - WATCHTOWER_POLL_INTERVAL=300 # 每 5 分钟 (300秒) 轮询一次阿里云 ACR
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_SCOPE=gym-tracker # 仅更新当前健身容器，绝不误触其他容器
+      - DOCKER_API_VERSION=1.41
     deploy:
       resources:
         limits:
           memory: 64M
-
-

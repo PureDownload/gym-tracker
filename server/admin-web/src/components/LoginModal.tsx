@@ -158,7 +158,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
           lineHeight: '1.5',
           textAlign: 'center',
         }}>
-          💡 提示：系统注册的首个用户会自动被提升为管理员。管理员账号同时支持直接在手机健身 App 中登录使用。
+          💡 提示：系统默认管理员账号为 <strong>admin</strong> / <strong>admin123</strong>（或首位注册的管理员用户）。进入控制台后可在“用户管理”中修改密码。
         </div>
       </div>
     </div>
