@@ -56,6 +56,9 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tag_latest }}
             ${{ steps.meta.outputs.tag_sha }}
+          # 禁用 BuildKit 默认的 OCI Attestations (兼容阿里云 ACR，解决 unknown manifest class 报错)
+          provenance: false
+          sbom: false
           # 启用 GitHub Actions 缓存加速构建 (复用 pnpm 依赖层，数十秒完成构建)
           cache-from: type=gha
           cache-to: type=gha,mode=max
